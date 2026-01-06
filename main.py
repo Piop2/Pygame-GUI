@@ -1,38 +1,66 @@
 import pygame
-from pygame import Surface
 
-from core.canvas_item import CanvasItem
-from view.image import ImageView
+from core.screen import Screen, Viewport
+from view.button import ButtonView
+from model.event import MouseButton
+
+WINDOW_SIZE = (800, 800)
+BUTTON_SIZE = (150, 60)
 
 pygame.init()
 
-window: Surface = pygame.display.set_mode((800, 800))
-pygame.display.set_caption("GUI TEST")
+window = pygame.display.set_mode((800, 800))
+pygame.display.set_caption("Pygame GUI")
 clock = pygame.Clock()
 
+ui_screen = Screen(Viewport(WINDOW_SIZE))
+ui_screen.style.background_color.update(31, 31, 31)
 
-root_node = CanvasItem()
-image1 = ImageView(pygame.image.load("asset/spk.jpg"))
+discord_box = ButtonView()
+discord_box.transform.x = (WINDOW_SIZE[0] // 2) - (BUTTON_SIZE[0] // 2)
+discord_box.transform.y = (WINDOW_SIZE[1] // 2) - (BUTTON_SIZE[1] // 2)
+discord_box.style.background_color.update(88, 101, 242)
+discord_box.style.width = BUTTON_SIZE[0]
+discord_box.style.height = BUTTON_SIZE[1]
+discord_box.style.border_radius = 12
 
-image2 = ImageView(pygame.image.load("asset/spk2.jpg"))
-image2.x = 50
-image2.y = 50
 
-root_node.add_node(image1)
-image1.add_node(image2)
+@discord_box.on_mouse_down
+def on_mouse_down(key, pos) -> bool:
+    if pos is None:
+        return False
+
+    if key == MouseButton.LEFT:
+        discord_box.style.background_color.a = 200
+
+    return False
+
+
+@discord_box.on_mouse_up
+def on_mouse_up(_, pos) -> bool:
+    discord_box.style.background_color.a = 255
+
+    if pos is None:
+        return False
+
+    return False
+
+
+ui_screen.add_node(discord_box)
 
 running = True
 while running:
-    delta: int = clock.tick(60)
+    delta = clock.tick(60)
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
 
-    # render
-    window.fill("white")
-    root_node.render(window)
+        ui_screen.dispatch_event(event)
 
+    ui_screen.update(delta)
+
+    ui_screen.render(window)
     pygame.display.flip()
 
 pygame.quit()
