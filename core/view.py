@@ -1,46 +1,71 @@
 from __future__ import annotations
 
-from typing import override, cast, Optional
+from copy import copy
 
-from pygame import Rect, Event
+from pygame import Surface, SRCALPHA
 
-from core.canvas_item import CanvasItem
+from core.node import Node
+from core.protocol.renderable import Renderable
+from core.protocol.updatable import Updatable
+from core.protocol.interactable import Interactable
+from core.protocol.styled import Styled
+from core.protocol.transformed import Transformed
+from model.event import UIEvent, MouseEvent
+from model.style import Style
+from model.transform import Transform
 
 
-class View(CanvasItem):
-    def __init__(self) -> None:
+class View(Node, Renderable, Updatable, Interactable, Styled, Transformed):
+    def __init__(self):
         super().__init__()
 
-        self.width = 0
-        self.height = 0
+        self._style = Style()
+        self._transform = Transform()
+
+    def dispatch_event(self, event: UIEvent) -> bool:
+        if self._style.width == 0 or self._style.height == 0:
+            return False
+
+        for child in self._children:
+            if not isinstance(child, Interactable):
+                continue
+
+            child_event = copy(event)
+            if isinstance(child_event, MouseEvent):
+                child_event.x -= self._transform.x
+                child_event.y -= self._transform.y
+
+            if child.dispatch_event(child_event):
+                return True
+
+        return self.process_event(event)
+
+    def update(self, delta: int) -> None:
+        # Implement me
         return
 
-    @property
-    def rect(self) -> Rect:
-        return Rect(self.screen_pos, (self.width, self.height))
+    def _draw(self, surface: Surface) -> None:
+        # Implement me
+        return
 
-    def contains(self, x: int, y: int) -> bool:
-        return self.rect.collidepoint(x, y)
+    def _apply_style(self, surface: Surface) -> None:
+        if self._style.width == 0 or self._style.height == 0:
+            return
 
-    def process(self, events: list[Event]) -> bool:
-        for child in self.get_children():
-            if child.process(events):
-                return True
-        return False
+        return
 
-    @override
-    def add_node(self, node: View) -> None:
-        return super().add_node(node)
+    def render(self, surface: Surface) -> None:
+        view_surface = Surface((self._style.width, self._style.height), flags=SRCALPHA)
+        view_surface.fill((0, 0, 0, 0))
 
-    @override
-    def get_children(self) -> tuple[View, ...]:
-        return cast(tuple[View, ...], tuple(self._children))
+        self._draw(view_surface)
+        self._apply_style(view_surface)
 
-    @override
-    def get_parent(self) -> Optional[View]:
-        return self._parent
+        for child in self._children:
+            if not isinstance(child, Renderable):
+                continue
 
-    @override
-    def _set_parent(self, new: Optional[View]) -> None:
-        self._parent = new
+            child.render(view_surface)
+
+        surface.blit(view_surface, (self.transform.x, self.transform.y))
         return
