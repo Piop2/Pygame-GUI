@@ -2,7 +2,6 @@ import pygame
 
 from core.screen import Screen, Viewport
 from view.button import ButtonView
-from model.event import MouseButton
 
 WINDOW_SIZE = (800, 800)
 BUTTON_SIZE = (150, 60)
@@ -24,26 +23,13 @@ discord_box.style.width = BUTTON_SIZE[0]
 discord_box.style.height = BUTTON_SIZE[1]
 discord_box.style.border_radius = 12
 
+@discord_box.on_mouse_enter
+def on_mouse_enter() -> None:
+    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
 
-@discord_box.on_mouse_down
-def on_mouse_down(key, pos) -> bool:
-    if pos is None:
-        return False
-
-    if key == MouseButton.LEFT:
-        discord_box.style.background_color.a = 200
-
-    return False
-
-
-@discord_box.on_mouse_up
-def on_mouse_up(_, pos) -> bool:
-    discord_box.style.background_color.a = 255
-
-    if pos is None:
-        return False
-
-    return False
+@discord_box.on_mouse_exit
+def on_mouse_exit() -> None:
+    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
 
 
 ui_screen.add_node(discord_box)
