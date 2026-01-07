@@ -10,6 +10,8 @@ class TextView(View):
     def __init__(self) -> None:
         super().__init__()
 
+        self._style.background_color.a = 0
+
         self._text = ""
 
         self._font = get_default_font()
