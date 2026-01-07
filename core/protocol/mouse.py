@@ -9,9 +9,7 @@ Position = tuple[int, int]
 
 OnMouseDownCallback = Callable[[MouseButton, Position], bool]
 OnMouseUpCallback = Callable[[MouseButton, Position], bool]
-
 OnMouseHoverCallback = Callable[[Position], bool]
-
 OnMouseEnterCallback = Callable[[], None]
 OnMouseExitCallback = Callable[[], None]
 
@@ -40,7 +38,7 @@ class MouseInteractable:
         if not isinstance(event, MouseEvent):
             return False
         if not (
-                0 <= event.x <= self._style.width and 0 <= event.y <= self._style.height
+            0 <= event.x <= self._style.width and 0 <= event.y <= self._style.height
         ):
             if self._entered:
                 self._entered = False

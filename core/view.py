@@ -22,9 +22,25 @@ class View(Node, Renderable, Updatable, Interactable, Styled, Transformed):
         self._style = Style()
         self._transform = Transform()
 
+        self._enabled: bool = True
+
+    @property
+    def enabled(self) -> bool:
+        return self._enabled
+
+    @enabled.setter
+    def enabled(self, value: bool) -> None:
+        self._enabled = value
+        return
+
     def dispatch_event(self, event: UIEvent) -> bool:
         if self._style.width == 0 or self._style.height == 0:
             return False
+        if not self._enabled:
+            return False
+
+        if self.process_event(event):
+            return True
 
         for child in self._children:
             if not isinstance(child, Interactable):
@@ -38,7 +54,7 @@ class View(Node, Renderable, Updatable, Interactable, Styled, Transformed):
             if child.dispatch_event(child_event):
                 return True
 
-        return self.process_event(event)
+        return False
 
     def update(self, delta: int) -> None:
         # Implement me

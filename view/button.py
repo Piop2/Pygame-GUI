@@ -14,6 +14,13 @@ class ButtonView(View, MouseInteractable):
 
         self._init_mouse_interaction()
 
+        self._on_mouse_enter = lambda: pygame.mouse.set_cursor(
+            pygame.SYSTEM_CURSOR_HAND
+        )
+        self._on_mouse_exit = lambda: pygame.mouse.set_cursor(
+            pygame.SYSTEM_CURSOR_ARROW
+        )
+
     def _draw(self, surface: Surface) -> None:
         pygame.draw.rect(
             surface,

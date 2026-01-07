@@ -23,15 +23,6 @@ discord_box.style.width = BUTTON_SIZE[0]
 discord_box.style.height = BUTTON_SIZE[1]
 discord_box.style.border_radius = 12
 
-@discord_box.on_mouse_enter
-def on_mouse_enter() -> None:
-    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
-
-@discord_box.on_mouse_exit
-def on_mouse_exit() -> None:
-    pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_ARROW)
-
-
 ui_screen.add_node(discord_box)
 
 running = True
