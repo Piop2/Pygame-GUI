@@ -12,7 +12,7 @@ class TextView(View):
 
         self._style.background_color.a = 0
 
-        self._text = ""
+        self._value = ""
 
         self._font = get_default_font()
         self._font_size = 20
@@ -20,16 +20,18 @@ class TextView(View):
 
         self._font_renderer = Font(self._font, self._font_size)
 
-    @property
-    def text(self) -> str:
-        return self._text
+        self._fit_content = False
 
-    @text.setter
-    def text(self, value: str) -> None:
-        self._text = value
+    @property
+    def value(self) -> str:
+        return self._value
+
+    @value.setter
+    def value(self, value: str) -> None:
+        self._value = value
 
         # fix size
-        size = self._font_renderer.size(self._text)
+        size = self._font_renderer.size(self._value)
         self._style.width = size[0]
         self._style.height = size[1]
 
@@ -51,11 +53,6 @@ class TextView(View):
         self._font_size = value
         self._font_renderer.set_point_size(value)
 
-        # fix size
-        size = self._font_renderer.size(self._text)
-        self._style.width = size[0]
-        self._style.height = size[1]
-
     @property
     def font_color(self) -> Color:
         return self._font_color
@@ -64,7 +61,21 @@ class TextView(View):
     def font_color(self, value: Color) -> None:
         self._font_color = value
 
+    @property
+    def fit_content(self) -> bool:
+        return self._fit_content
+
+    @fit_content.setter
+    def fit_content(self, value: bool) -> None:
+        self._fit_content = value
+
+    def update(self, delta: int) -> None:
+        if self._fit_content:
+            size = self._font_renderer.size(self._value)
+            self._style.width = size[0]
+            self._style.height = size[1]
+
     def _draw(self, surface: Surface) -> None:
         surface.blit(
-            self._font_renderer.render(self._text, True, self._font_color), (0, 0)
+            self._font_renderer.render(self._value, True, self._font_color), (0, 0)
         )
