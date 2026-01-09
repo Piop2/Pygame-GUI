@@ -6,6 +6,7 @@ from pygame.font import get_default_font
 
 from core.view import View
 from core.protocol.has_value import HasValue
+from model.align import ContentAlign, calc_aligned_pos
 
 
 class TextView(View, HasValue[str]):
@@ -23,6 +24,7 @@ class TextView(View, HasValue[str]):
         self._font_renderer = Font(self._font, self._font_size)
 
         self._fit_content = False
+        self._content_align = ContentAlign.TOP_LEFT
 
     @property
     def value(self) -> str:
@@ -31,11 +33,6 @@ class TextView(View, HasValue[str]):
     @value.setter
     def value(self, value: str) -> None:
         self._value = value
-
-        # fix size
-        size = self._font_renderer.size(self._value)
-        self._style.width = size[0]
-        self._style.height = size[1]
 
     @property
     def font(self) -> str:
@@ -71,13 +68,27 @@ class TextView(View, HasValue[str]):
     def fit_content(self, value: bool) -> None:
         self._fit_content = value
 
+    @property
+    def content_align(self) -> ContentAlign:
+        return self._content_align
+
+    @content_align.setter
+    def content_align(self, value: ContentAlign) -> None:
+        self._content_align = value
+
     def update(self, delta: int) -> None:
         if self._fit_content:
-            size = self._font_renderer.size(self._value)
-            self._style.width = size[0]
-            self._style.height = size[1]
+            self._style.size = self._font_renderer.size(self._value)
 
     def _draw(self, surface: Surface) -> None:
+        x, y = (0, 0)
+        if not self._fit_content:
+            x, y = calc_aligned_pos(
+                self._content_align,
+                self._style.size,
+                self._font_renderer.size(self._value),
+            )
+
         surface.blit(
-            self._font_renderer.render(self._value, True, self._font_color), (0, 0)
+            self._font_renderer.render(self._value, True, self._font_color), (x, y)
         )
