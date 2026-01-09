@@ -21,6 +21,15 @@ class Style:
     border_bottom_right_radius: int = 0
 
     @property
+    def size(self) -> tuple[int, int]:
+        return self.width, self.height
+
+    @size.setter
+    def size(self, value: tuple[int, int]) -> None:
+        self.width = value[0]
+        self.height = value[1]
+
+    @property
     def border_radius(self) -> int:
         if (
             self.border_top_left_radius
