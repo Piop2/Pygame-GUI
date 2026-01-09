@@ -29,7 +29,7 @@ text_box = TextView()
 text_box.font = "asset/gg sans Medium.ttf"
 text_box.font_size = 18
 text_box.font_color.update(255, 255, 255)
-text_box.text = "Hello, World!"
+text_box.value = "Hello, World!"
 text_box.transform.x = (BUTTON_SIZE[0] // 2) - (text_box.style.width // 2)
 text_box.transform.y = (BUTTON_SIZE[1] // 2) - (text_box.style.height // 2)
 

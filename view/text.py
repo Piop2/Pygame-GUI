@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from core.view import View
 
 from pygame import Font, Surface, Color
 from pygame.font import get_default_font
 
+from core.view import View
+from core.protocol.has_value import HasValue
 
-class TextView(View):
+
+class TextView(View, HasValue[str]):
     def __init__(self) -> None:
         super().__init__()
 
