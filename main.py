@@ -6,6 +6,7 @@ from model.event import MouseButton
 from view.button import ButtonView
 from view.text import TextView
 from view.shape import RectView
+from view.input import InputView
 
 WINDOW_SIZE = (800, 800)
 BUTTON_SIZE = (150, 45)
@@ -51,8 +52,16 @@ rect.style.background_color.update(255, 0, 0)
 rect.style.width = 100
 rect.style.height = 100
 
+input_box = InputView()
+input_box.transform.x = 150
+input_box.transform.y = 150
+input_box.style.size = (500, 45)
+input_box.style.background_color.update(250, 250, 250)
+
+
 ui_screen.add_node(discord_box)
 ui_screen.add_node(rect)
+ui_screen.add_node(input_box)
 discord_box.add_node(text_box)
 
 running = True

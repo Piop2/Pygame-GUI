@@ -9,7 +9,7 @@ from model.event import UIEvent, KeyboardEvent, KeyboardEventType
 
 OnKeyDownCallback = Callable[[int], bool]
 OnKeyUpCallback = Callable[[int], bool]
-OnInputCallback = Callable[[str], bool]
+OnInputCallback = Callable[[str], None]
 
 
 class KeyboardInteractable(Interactable):
@@ -21,7 +21,7 @@ class KeyboardInteractable(Interactable):
     def _init_keyboard_interaction(self) -> None:
         self._on_key_down = lambda key: False
         self._on_key_up = lambda key: False
-        self._on_input = lambda text: False
+        self._on_input = lambda text: None
 
     def _process_keyboard_event(self, event: UIEvent) -> bool:
         if not isinstance(event, KeyboardEvent):
@@ -35,7 +35,8 @@ class KeyboardInteractable(Interactable):
             case KeyboardEventType.UP:
                 return self.key_up(event.key)
             case KeyboardEventType.INPUT:
-                return self.input(event.text)
+                self.input(event.text)
+                return True
 
     def key_down(self, key: int) -> bool:
         return self._on_key_down(key)
@@ -43,8 +44,8 @@ class KeyboardInteractable(Interactable):
     def key_up(self, key: int) -> bool:
         return self._on_key_up(key)
 
-    def input(self, text: str) -> bool:
-        return self._on_input(text)
+    def input(self, text: str) -> None:
+        self._on_input(text)
 
     def on_key_down(self, callback: OnKeyDownCallback) -> None:
         self._on_key_down = callback

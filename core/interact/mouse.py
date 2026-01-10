@@ -41,6 +41,9 @@ class MouseInteractable(Interactable):
         if not (
             0 <= event.x <= self._style.width and 0 <= event.y <= self._style.height
         ):
+            if isinstance(event, MouseDownEvent):
+                self.unfocus()
+
             if self._entered:
                 self._entered = False
                 self.mouse_exit()
@@ -64,6 +67,7 @@ class MouseInteractable(Interactable):
         raise RuntimeError
 
     def mouse_down(self, key: MouseButton, position: Position) -> bool:
+        self.focus()
         return self._on_mouse_down(key, position)
 
     def mouse_up(self, key: MouseButton, position: Position) -> bool:
