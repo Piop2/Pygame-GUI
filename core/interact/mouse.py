@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Callable
 
+from core.interact.base import Interactable
 from model.style import Style
 from model.event import MouseButton, MouseEvent, MouseDownEvent, MouseUpEvent, UIEvent
 
@@ -14,7 +15,7 @@ OnMouseEnterCallback = Callable[[], None]
 OnMouseExitCallback = Callable[[], None]
 
 
-class MouseInteractable:
+class MouseInteractable(Interactable):
     _style: Style
 
     _on_mouse_down: OnMouseDownCallback

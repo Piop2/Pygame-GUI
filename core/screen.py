@@ -10,7 +10,7 @@ from pygame.locals import MOUSEBUTTONUP, MOUSEMOTION
 from core.view import View
 from core.node import RootNode
 from core.event_factory import EVENT_FACTORY
-from core.protocol.interactable import Interactable
+from core.interact.base import Interactable
 from core.protocol.renderable import Renderable
 from core.protocol.updatable import Updatable
 from core.protocol.styled import Styled

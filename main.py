@@ -2,6 +2,7 @@ import pygame
 
 from core.screen import Screen, Viewport
 from model.align import ContentAlign
+from model.event import MouseButton
 from view.button import ButtonView
 from view.text import TextView
 from view.shape import RectView
@@ -20,10 +21,20 @@ ui_screen.style.background_color.update(31, 31, 31)
 
 discord_box = ButtonView()
 discord_box.transform.x = (WINDOW_SIZE[0] // 2) - (BUTTON_SIZE[0] // 2)
-discord_box.transform.y = (WINDOW_SIZE[1] // 2) - (BUTTON_SIZE[1] // 2)
+discord_box.transform.y = 40
 discord_box.style.background_color.update(88, 101, 242)
 discord_box.style.size = BUTTON_SIZE
 discord_box.style.border_radius = 11
+
+
+@discord_box.on_mouse_down
+def on_mouse_down(key: MouseButton, _):
+    if key == MouseButton.LEFT:
+        print("CLICK!!!")
+        return True
+
+    return False
+
 
 text_box = TextView()
 text_box.font = "asset/gg sans Medium.ttf"

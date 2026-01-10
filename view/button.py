@@ -3,7 +3,7 @@ from __future__ import annotations
 import pygame.draw
 
 from core.view import View
-from core.protocol.mouse import MouseInteractable
+from core.interact.mouse import MouseInteractable
 from model.event import UIEvent
 
 

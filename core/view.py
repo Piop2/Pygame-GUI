@@ -10,7 +10,7 @@ from pygame.constants import SRCALPHA, BLEND_RGBA_MULT
 from core.node import Node
 from core.protocol.renderable import Renderable
 from core.protocol.updatable import Updatable
-from core.protocol.interactable import Interactable
+from core.interact.base import Interactable
 from core.protocol.styled import Styled
 from core.protocol.transformed import Transformed
 from model.event import UIEvent, MouseEvent
