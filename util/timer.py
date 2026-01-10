@@ -7,22 +7,22 @@ class BaseTimer(ABC):
     def __init__(self, time: int = 0) -> None:
         super().__init__()
         self._time: int = time
-        self.__is_paused: bool = False
+        self.__running: bool = False
         return
 
     @property
     def time(self) -> int:
         return self._time
 
-    def is_paused(self) -> bool:
-        return self.__is_paused
+    def is_running(self) -> bool:
+        return self.__running
 
-    def unpause(self) -> None:
-        self.__is_paused = False
+    def run(self) -> None:
+        self.__running = False
         return
 
-    def pause(self) -> None:
-        self.__is_paused = True
+    def stop(self) -> None:
+        self.__running = True
         return
 
     @abstractmethod
@@ -62,11 +62,15 @@ class CountDownTimer(BaseTimer):
 
     def reset(self) -> None:
         self._time = self.__total_time
+        self.run()
         return
 
     def update(self, ms: int) -> None:
-        if self.is_paused():
+        if self.is_running():
             return
 
         self._time -= ms
+        if self._time < 0:
+            self._time = 0
+            self.stop()
         return
