@@ -5,7 +5,14 @@ from dataclasses import dataclass
 
 import pygame.transform
 from pygame import Event, Surface, Vector2
-from pygame.locals import MOUSEBUTTONUP, MOUSEMOTION
+from pygame.locals import (
+    MOUSEBUTTONDOWN,
+    MOUSEBUTTONUP,
+    MOUSEMOTION,
+    KEYDOWN,
+    KEYUP,
+    TEXTINPUT,
+)
 
 from core.view import View
 from core.node import RootNode
@@ -41,8 +48,10 @@ class Screen(RootNode, Styled):
         """dispatch a single pygame event to all nodes"""
 
         ui_event: UIEvent
-        if MOUSEMOTION <= event.type <= MOUSEBUTTONUP:
+        if event.type in (MOUSEMOTION, MOUSEBUTTONDOWN, MOUSEBUTTONUP):
             ui_event = EVENT_FACTORY.make_mouse_event(event)
+        elif event.type in (KEYDOWN, KEYUP, TEXTINPUT):
+            ui_event = EVENT_FACTORY.make_keyboard_event(event)
         else:
             return
 

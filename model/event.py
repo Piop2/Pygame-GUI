@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import IntEnum
+from enum import IntEnum, Enum, auto
 
 
 @dataclass
@@ -30,3 +30,16 @@ class MouseDownEvent(MouseEvent): ...
 
 @dataclass
 class MouseUpEvent(MouseEvent): ...
+
+
+class KeyboardEventType(Enum):
+    DOWN = auto()
+    UP = auto()
+    INPUT = auto()
+
+
+@dataclass
+class KeyboardEvent(UIEvent):
+    type: KeyboardEventType
+    key: int
+    text: str
