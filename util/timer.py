@@ -38,10 +38,11 @@ class BaseTimer(ABC):
 #
 #     def reset(self) -> None:
 #         self._time = 0
+#         self.run()
 #         return
 #
 #     def update(self, ms: int) -> None:
-#         if self.is_paused():
+#         if not self.is_running():
 #             return
 #
 #         self._time += ms
