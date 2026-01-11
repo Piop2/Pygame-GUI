@@ -5,11 +5,11 @@ from pygame import Font, Surface, Color
 from pygame.font import get_default_font
 
 from core.view import View
-from core.protocol.has_value import HasValue
+from core.interface.valued import Valued
 from model.align import ContentAlign, calc_aligned_pos
 
 
-class TextView(View, HasValue[str]):
+class TextView(View, Valued[str]):
     def __init__(self) -> None:
         super().__init__()
 

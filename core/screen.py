@@ -18,9 +18,9 @@ from core.view import View
 from core.node import RootNode
 from core.event_factory import EVENT_FACTORY
 from core.interact.base import Interactable
-from core.protocol.renderable import Renderable
-from core.protocol.updatable import Updatable
-from core.protocol.styled import Styled
+from core.interface.renderable import Renderable
+from core.interface.updatable import Updatable
+from core.interface.styled import Styled
 from model.event import UIEvent, MouseEvent
 from model.style import Style
 

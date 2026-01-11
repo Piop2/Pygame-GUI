@@ -14,7 +14,7 @@ from pygame.constants import (
 from core.interact.keyboard import KeyboardInteractable
 from core.interact.mouse import MouseInteractable
 from core.view import View
-from core.protocol.has_value import HasValue
+from core.interface.valued import Valued
 from model.event import UIEvent
 from view.text import TextView, ContentAlign
 from util.timer import CountDownTimer
@@ -32,7 +32,7 @@ class _RemovalState(Enum):
     REPEAT_COOLDOWN = auto()
 
 
-class InputView(View, HasValue[str], KeyboardInteractable, MouseInteractable):
+class InputView(View, Valued[str], KeyboardInteractable, MouseInteractable):
     def __init__(self) -> None:
         super().__init__()
         self._init_keyboard_interaction()

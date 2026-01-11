@@ -8,11 +8,11 @@ from pygame.surface import Surface
 from pygame.constants import SRCALPHA, BLEND_RGBA_MULT
 
 from core.node import Node
-from core.protocol.renderable import Renderable
-from core.protocol.updatable import Updatable
+from core.interface.renderable import Renderable
+from core.interface.updatable import Updatable
 from core.interact.base import Interactable
-from core.protocol.styled import Styled
-from core.protocol.transformed import Transformed
+from core.interface.styled import Styled
+from core.interface.transformed import Transformed
 from model.event import UIEvent, MouseEvent
 from model.style import Style
 from model.transform import Transform
