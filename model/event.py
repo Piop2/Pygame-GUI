@@ -1,45 +1,55 @@
 from __future__ import annotations
 
+from abc import ABC
 from dataclasses import dataclass
-from enum import IntEnum, Enum, auto
+from enum import Enum, auto
+
+from model.vector import Vector
 
 
-@dataclass
-class UIEvent: ...
+class InputEvent(ABC):
+    pass
 
 
-class MouseButton(IntEnum):
-    NONE = 0
-    LEFT = 1
-    WHEEL = 2
-    RIGHT = 3
-    WHEEL_UP = 4
-    WHEEL_DOWN = 5
+class MouseButton(Enum):
+    LEFT = auto()
+    WHEEL = auto()
+    RIGHT = auto()
 
 
-@dataclass
-class MouseEvent(UIEvent):
+@dataclass(frozen=True)
+class MouseDownEvent(InputEvent):
     key: MouseButton
-    x: int
-    y: int
+    position: Vector
 
 
-@dataclass
-class MouseDownEvent(MouseEvent): ...
+@dataclass(frozen=True)
+class MouseUpEvent(InputEvent):
+    key: MouseButton
+    position: Vector
 
 
-@dataclass
-class MouseUpEvent(MouseEvent): ...
+@dataclass(frozen=True)
+class MouseScrollUpEvent(InputEvent):
+    position: Vector
 
 
-class KeyboardEventType(Enum):
-    DOWN = auto()
-    UP = auto()
-    INPUT = auto()
+@dataclass(frozen=True)
+class MouseScrollEvent(InputEvent):
+    delta: Vector
+    position: Vector
 
 
-@dataclass
-class KeyboardEvent(UIEvent):
-    type: KeyboardEventType
+@dataclass(frozen=True)
+class KeyDownEvent(InputEvent):
     key: int
+
+
+@dataclass(frozen=True)
+class KeyUpEvent(InputEvent):
+    key: int
+
+
+@dataclass(frozen=True)
+class KeyInputEvent(InputEvent):
     text: str
