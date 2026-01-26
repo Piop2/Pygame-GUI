@@ -75,10 +75,8 @@ class View(Node):
                 continue
 
             child_event = copy(event)
-            if (
-                isinstance(child_event, MouseDownEvent)
-                or isinstance(child_event, MouseUpEvent)
-                or isinstance(child_event, MouseMotionEvent)
+            if isinstance(
+                child_event, (MouseDownEvent, MouseUpEvent, MouseMotionEvent)
             ):
                 child_event.pos.x -= self._transform.x
                 child_event.pos.y -= self._transform.y

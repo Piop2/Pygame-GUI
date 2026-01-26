@@ -4,24 +4,11 @@ from copy import copy
 from dataclasses import dataclass
 
 import pygame.transform
-from pygame import Event, Surface, Vector2
-from pygame.locals import (
-    MOUSEBUTTONDOWN,
-    MOUSEBUTTONUP,
-    MOUSEMOTION,
-    KEYDOWN,
-    KEYUP,
-    TEXTINPUT,
-)
+from pygame import Surface, Vector2
 
-from core.view import View
 from core.node import RootNode
-from core.event_factory import EVENT_FACTORY
-from core.interact.base import Interactable
-from core.interface.renderable import Renderable
-from core.interface.updatable import Updatable
-from core.interface.styled import Styled
-from model.event import UIEvent, MouseEvent
+from core.view import View
+from model.event import InputEvent, MouseDownEvent, MouseUpEvent, MouseMotionEvent
 from model.style import Style
 
 
@@ -31,7 +18,7 @@ class Viewport:
     scale: float = 1.0
 
 
-class Screen(RootNode, Styled):
+class Screen(RootNode):
     def __init__(self, viewport: Viewport, position: tuple[int, int] = (0, 0)) -> None:
         super().__init__()
 
@@ -41,32 +28,32 @@ class Screen(RootNode, Styled):
         self._position: Vector2 = Vector2(position)
 
     @property
+    def style(self) -> Style:
+        return self._style
+
+    @style.setter
+    def style(self, value: Style) -> None:
+        self._style = value
+
+    @property
     def position(self) -> Vector2:
         return self._position
 
-    def dispatch_event(self, event: Event) -> None:
+    def dispatch(self, event: InputEvent) -> None:
         """dispatch a single pygame event to all nodes"""
-
-        ui_event: UIEvent
-        if event.type in (MOUSEMOTION, MOUSEBUTTONDOWN, MOUSEBUTTONUP):
-            ui_event = EVENT_FACTORY.make_mouse_event(event)
-        elif event.type in (KEYDOWN, KEYUP, TEXTINPUT):
-            ui_event = EVENT_FACTORY.make_keyboard_event(event)
-        else:
-            return
 
         for child in self._children:
             if not isinstance(child, View):
                 continue
-            if not isinstance(child, Interactable):
-                continue
 
-            child_event = copy(ui_event)
-            if isinstance(child_event, MouseEvent):
-                child_event.x -= child.transform.x
-                child_event.y -= child.transform.y
+            child_event = copy(event)
+            if isinstance(
+                child_event, (MouseDownEvent, MouseUpEvent, MouseMotionEvent)
+            ):
+                child_event.pos.x -= child.transform.x
+                child_event.pos.y -= child.transform.y
 
-            if child.dispatch_event(child_event):
+            if child.dispatch(child_event):
                 return
 
     def update(self, delta_ms: int) -> None:
@@ -80,7 +67,7 @@ class Screen(RootNode, Styled):
             if children:
                 worklist.extend(children)
 
-            if isinstance(current, Updatable):
+            if isinstance(current, View):
                 current.update(delta_ms)
 
     def render(self, surface: Surface) -> None:
@@ -89,7 +76,7 @@ class Screen(RootNode, Styled):
         screen_surface.fill(self._style.background_color)
 
         for child in self._children:
-            if not isinstance(child, Renderable):
+            if not isinstance(child, View):
                 continue
 
             child.render(screen_surface)
