@@ -4,7 +4,7 @@ from typing import Callable
 
 from pygame.math import Vector2
 
-from core.focus import FOCUS_MANAGER
+from core.focus_manager import FOCUS_MANAGER
 from core.view import View
 from event.handler.base import BaseEventHandler
 from model.event import (
