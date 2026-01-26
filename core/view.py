@@ -8,14 +8,15 @@ from pygame.surface import Surface
 from pygame.constants import SRCALPHA, BLEND_RGBA_MULT
 
 from core.node import Node
-from core.interface.renderable import Renderable
-from core.interface.updatable import Updatable
-from core.interact.base import Interactable
-from core.interface.styled import Styled
-from core.interface.transformed import Transformed
-from model.event import UIEvent, MouseEvent
+from event.dispatcher import EventDispatcher
 from model.style import Style
 from model.transform import Transform
+from model.event import (
+    InputEvent,
+    MouseDownEvent,
+    MouseUpEvent,
+    MouseMotionEvent,
+)
 
 
 def _make_clear_surface(width: int, height: int) -> Surface:
@@ -24,14 +25,32 @@ def _make_clear_surface(width: int, height: int) -> Surface:
     return surface
 
 
-class View(Node, Renderable, Updatable, Interactable, Styled, Transformed):
+class View(Node):
     def __init__(self):
         super().__init__()
+
+        self._dispatcher = EventDispatcher()
+
+        self._enabled: bool = True
 
         self._style = Style()
         self._transform = Transform()
 
-        self._enabled: bool = True
+    @property
+    def style(self) -> Style:
+        return self._style
+
+    @style.setter
+    def style(self, value: Style) -> None:
+        self._style = value
+
+    @property
+    def transform(self) -> Transform:
+        return self._transform
+
+    @transform.setter
+    def transform(self, value: Transform) -> None:
+        self._transform = value
 
     @property
     def enabled(self) -> bool:
@@ -42,25 +61,29 @@ class View(Node, Renderable, Updatable, Interactable, Styled, Transformed):
         self._enabled = value
         return
 
-    def dispatch_event(self, event: UIEvent) -> bool:
+    def dispatch(self, event: InputEvent) -> bool:
         if self._style.width == 0 or self._style.height == 0:
             return False
         if not self._enabled:
             return False
 
-        if self._process_event(event):
+        if self._dispatcher.dispatch(event):
             return True
 
         for child in self._children:
-            if not isinstance(child, Interactable):
+            if not isinstance(child, View):
                 continue
 
             child_event = copy(event)
-            if isinstance(child_event, MouseEvent):
-                child_event.x -= self._transform.x
-                child_event.y -= self._transform.y
+            if (
+                isinstance(child_event, MouseDownEvent)
+                or isinstance(child_event, MouseUpEvent)
+                or isinstance(child_event, MouseMotionEvent)
+            ):
+                child_event.pos.x -= self._transform.x
+                child_event.pos.y -= self._transform.y
 
-            if child.dispatch_event(child_event):
+            if child.dispatch(child_event):
                 return True
 
         return False
@@ -103,7 +126,7 @@ class View(Node, Renderable, Updatable, Interactable, Styled, Transformed):
         view_surface = self._apply_style(content_surface)
 
         for child in self._children:
-            if not isinstance(child, Renderable):
+            if not isinstance(child, View):
                 continue
 
             child.render(view_surface)
