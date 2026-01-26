@@ -2,54 +2,73 @@ from __future__ import annotations
 
 from abc import ABC
 from dataclasses import dataclass
-from enum import Enum, auto
+from enum import IntEnum
 
-from model.vector import Vector
+from pygame.math import Vector2
+
+
+class MouseButton(IntEnum):
+    LEFT = 1
+    WHEEL = 2
+    RIGHT = 3
+    WHEEL_UP = 4
+    WHEEL_DOWN = 5
 
 
 class InputEvent(ABC):
     pass
 
 
-class MouseButton(Enum):
-    LEFT = auto()
-    WHEEL = auto()
-    RIGHT = auto()
+class MouseEvent(InputEvent):
+    pass
+
+
+class KeyEvent(InputEvent):
+    pass
 
 
 @dataclass(frozen=True)
-class MouseDownEvent(InputEvent):
-    key: MouseButton
-    position: Vector
+class MouseDownEvent(MouseEvent):
+    key: int
+    pos: Vector2
 
 
 @dataclass(frozen=True)
-class MouseUpEvent(InputEvent):
-    key: MouseButton
-    position: Vector
+class MouseUpEvent(MouseEvent):
+    key: int
+    pos: Vector2
 
 
 @dataclass(frozen=True)
-class MouseScrollUpEvent(InputEvent):
-    position: Vector
+class MouseMotionEvent(MouseEvent):
+    pos: Vector2
 
 
 @dataclass(frozen=True)
-class MouseScrollEvent(InputEvent):
-    delta: Vector
-    position: Vector
+class MouseScrollEvent(MouseEvent):
+    delta: Vector2
 
 
 @dataclass(frozen=True)
-class KeyDownEvent(InputEvent):
+class MouseEnterEvent(MouseEvent):
+    pass
+
+
+@dataclass(frozen=True)
+class MouseExitEvent(MouseEvent):
+    pass
+
+
+@dataclass(frozen=True)
+class KeyDownEvent(KeyEvent):
     key: int
 
 
 @dataclass(frozen=True)
-class KeyUpEvent(InputEvent):
+class KeyUpEvent(KeyEvent):
     key: int
 
 
 @dataclass(frozen=True)
-class KeyInputEvent(InputEvent):
+class TextInputEvent(InputEvent):
     text: str
