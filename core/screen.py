@@ -4,12 +4,11 @@ from copy import copy
 from dataclasses import dataclass
 
 import pygame.transform
-from pygame import Surface, Vector2
+from pygame import Surface
 
 from core.node import RootNode
-from core.view import View
+from core.canvas_item import CanvasItem
 from model.event import InputEvent, MouseDownEvent, MouseUpEvent, MouseMotionEvent
-from model.style import Style
 
 
 @dataclass(frozen=True)
@@ -18,32 +17,19 @@ class Viewport:
     scale: float = 1.0
 
 
-class Screen(RootNode):
+class Screen(CanvasItem, RootNode):
     def __init__(self, viewport: Viewport, position: tuple[int, int] = (0, 0)) -> None:
         super().__init__()
 
-        self._style = Style()
-
         self.viewport: Viewport = viewport
-        self._position: Vector2 = Vector2(position)
 
-    @property
-    def style(self) -> Style:
-        return self._style
-
-    @style.setter
-    def style(self, value: Style) -> None:
-        self._style = value
-
-    @property
-    def position(self) -> Vector2:
-        return self._position
+        self._transform.x = position[0]
+        self._transform.y = position[1]
 
     def dispatch(self, event: InputEvent) -> None:
         """dispatch a single pygame event to all nodes"""
-
         for child in self._children:
-            if not isinstance(child, View):
+            if not isinstance(child, CanvasItem):
                 continue
 
             child_event = copy(event)
@@ -67,7 +53,7 @@ class Screen(RootNode):
             if children:
                 worklist.extend(children)
 
-            if isinstance(current, View):
+            if isinstance(current, CanvasItem):
                 current.update(delta_ms)
 
     def render(self, surface: Surface) -> None:
@@ -76,7 +62,7 @@ class Screen(RootNode):
         screen_surface.fill(self._style.background_color)
 
         for child in self._children:
-            if not isinstance(child, View):
+            if not isinstance(child, CanvasItem):
                 continue
 
             child.render(screen_surface)

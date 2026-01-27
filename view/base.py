@@ -4,13 +4,13 @@ from copy import copy
 
 import pygame.draw
 import pygame.mask
-from pygame.surface import Surface
 from pygame.constants import SRCALPHA, BLEND_RGBA_MULT
+from pygame.surface import Surface
 
+from core.canvas_item import CanvasItem
 from core.node import Node
 from event.dispatcher import EventDispatcher
-from model.style import Style
-from model.transform import Transform
+from event.handler import BaseEventHandler
 from model.event import (
     InputEvent,
     MouseDownEvent,
@@ -25,32 +25,15 @@ def _make_clear_surface(width: int, height: int) -> Surface:
     return surface
 
 
-class View(Node):
-    def __init__(self):
+class View(CanvasItem, Node):
+    def __init__(self) -> None:
         super().__init__()
 
+        self._enabled = True
+
         self._dispatcher = EventDispatcher()
-
-        self._enabled: bool = True
-
-        self._style = Style()
-        self._transform = Transform()
-
-    @property
-    def style(self) -> Style:
-        return self._style
-
-    @style.setter
-    def style(self, value: Style) -> None:
-        self._style = value
-
-    @property
-    def transform(self) -> Transform:
-        return self._transform
-
-    @transform.setter
-    def transform(self, value: Transform) -> None:
-        self._transform = value
+        self._entered = False
+        return
 
     @property
     def enabled(self) -> bool:
@@ -61,17 +44,25 @@ class View(Node):
         self._enabled = value
         return
 
+    def add_handler(self, handler: BaseEventHandler) -> None:
+        self._dispatcher.add_handler(handler)
+        return
+
+    def remove_handler(self, handler: BaseEventHandler) -> None:
+        self._dispatcher.remove_handler(handler)
+        return
+
     def dispatch(self, event: InputEvent) -> bool:
         if self._style.width == 0 or self._style.height == 0:
             return False
         if not self._enabled:
             return False
 
-        if self._dispatcher.dispatch(event):
+        if self._dispatcher.dispatch(self, event):
             return True
 
         for child in self._children:
-            if not isinstance(child, View):
+            if not isinstance(child, CanvasItem):
                 continue
 
             child_event = copy(event)
@@ -124,7 +115,7 @@ class View(Node):
         view_surface = self._apply_style(content_surface)
 
         for child in self._children:
-            if not isinstance(child, View):
+            if not isinstance(child, CanvasItem):
                 continue
 
             child.render(view_surface)

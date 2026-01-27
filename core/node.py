@@ -5,6 +5,8 @@ from typing import Self
 
 class Node:
     def __init__(self) -> None:
+        super().__init__()
+
         self._children: list[Node] = []
 
     def get_children(self) -> tuple[Node, ...]:
@@ -26,4 +28,7 @@ class Node:
         return self
 
 
-class RootNode(Node): ...
+class RootNode(Node):
+    def __init__(self) -> None:
+        super().__init__()
+        return

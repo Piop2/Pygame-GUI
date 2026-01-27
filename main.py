@@ -1,12 +1,8 @@
 import pygame
 
+from core.input_manager import INPUT_MANAGER
 from core.screen import Screen, Viewport
-from model.align import ContentAlign
-from model.event import MouseButton
 from view.button import ButtonView
-from view.text import TextView
-from view.shape import RectView
-from view.input import InputView
 
 WINDOW_SIZE = (800, 800)
 BUTTON_SIZE = (150, 45)
@@ -27,42 +23,9 @@ discord_box.style.background_color.update(88, 101, 242)
 discord_box.style.size = BUTTON_SIZE
 discord_box.style.border_radius = 11
 
-
-@discord_box.on_mouse_down
-def on_mouse_down(key: MouseButton, _):
-    if key == MouseButton.LEFT:
-        print("CLICK!!!")
-        return True
-
-    return False
-
-
-text_box = TextView()
-text_box.font = "asset/gg sans Medium.ttf"
-text_box.font_size = 18
-text_box.font_color.update(255, 255, 255)
-text_box.value = "Hello, World!"
-text_box.style.size = BUTTON_SIZE
-text_box.content_align = ContentAlign.MIDDLE_CENTER
-
-rect = RectView()
-rect.transform.x = 10
-rect.transform.y = 10
-rect.style.background_color.update(255, 0, 0)
-rect.style.width = 100
-rect.style.height = 100
-
-input_box = InputView()
-input_box.transform.x = 150
-input_box.transform.y = 150
-input_box.style.size = (500, 45)
-input_box.style.background_color.update(250, 250, 250)
-
-
 ui_screen.add_node(discord_box)
-ui_screen.add_node(rect)
-ui_screen.add_node(input_box)
-discord_box.add_node(text_box)
+
+INPUT_MANAGER.activate_screen(ui_screen)
 
 running = True
 while running:
@@ -72,7 +35,7 @@ while running:
         if event.type == pygame.QUIT:
             running = False
 
-        ui_screen.dispatch_event(event)
+        INPUT_MANAGER.dispatch(event)
 
     # Update
     ui_screen.update(delta)

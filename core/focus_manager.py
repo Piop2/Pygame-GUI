@@ -2,22 +2,22 @@ from __future__ import annotations
 
 from typing import Optional
 
-from core.view import View
+from core.canvas_item import CanvasItem
 
 
 class FocusManager:
     """Manage about view focusing ( singleton )"""
 
     def __init__(self) -> None:
-        self.__focused: Optional[View] = None
+        self.__focused: Optional[CanvasItem] = None
 
-    def is_focused(self, view: View) -> bool:
+    def is_focused(self, view: CanvasItem) -> bool:
         return view is self.__focused
 
-    def focus(self, view: View) -> None:
+    def focus(self, view: CanvasItem) -> None:
         self.__focused = view
 
-    def unfocus(self, view: View) -> None:
+    def unfocus(self, view: CanvasItem) -> None:
         if not self.is_focused(view):
             return
 
