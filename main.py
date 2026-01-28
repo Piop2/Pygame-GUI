@@ -4,8 +4,7 @@ from pygame.math import Vector2
 from core.input_manager import INPUT_MANAGER
 from core.screen import Screen, Viewport
 from event.handler import MouseHandler
-from view import InputView
-from view.button.button import ButtonView
+from view import ButtonView, InputView, CheckBoxView
 from model import MouseButton
 
 WINDOW_SIZE = (800, 800)
@@ -44,6 +43,7 @@ def on_mouse_up(_view: ButtonView, key: MouseButton, _pos: Vector2) -> bool:
         return True
     return False
 
+
 @mouse_handler.on_click
 def on_click(_view: ButtonView, key: MouseButton) -> None:
     if key == MouseButton.LEFT:
@@ -52,13 +52,21 @@ def on_click(_view: ButtonView, key: MouseButton) -> None:
 
 
 input_box = InputView()
+input_box.text_view.font = "asset/gg sans Medium.ttf"
 input_box.transform.x = 150
 input_box.transform.y = 150
 input_box.style.size = (500, 45)
 input_box.style.background_color.update(250, 250, 250)
+input_box.pattern = r"[0-9.]+"
+
+check_box = CheckBoxView()
+check_box.transform.x = 500
+check_box.transform.y = 600
+check_box.style.size = (30, 30)
 
 ui_screen.add_node(discord_box)
 ui_screen.add_node(input_box)
+ui_screen.add_node(check_box)
 
 INPUT_MANAGER.activate_screen(ui_screen)
 

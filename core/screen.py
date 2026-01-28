@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import override
 from copy import deepcopy
 from dataclasses import dataclass
 
@@ -8,6 +9,8 @@ from pygame import Surface
 
 from core.node import RootNode
 from core.canvas_item import CanvasItem
+from event.dispatcher import EventDispatcher
+from event.handler import MouseHandler
 from model.event import InputEvent, MouseDownEvent, MouseUpEvent, MouseMotionEvent
 
 
@@ -26,8 +29,18 @@ class Screen(CanvasItem, RootNode):
         self._transform.x = position[0]
         self._transform.y = position[1]
 
+        self.__dispatcher: EventDispatcher = EventDispatcher()
+        self.__dispatcher.add_handler(MouseHandler())
+        return
+
+    @override
+    def hit_test(self, x: int | float, y: int | float) -> bool:
+        return True
+
     def dispatch(self, event: InputEvent) -> None:
         """dispatch a single pygame event to all nodes"""
+        self.__dispatcher.dispatch(self, event)
+
         for child in self._children:
             if not isinstance(child, CanvasItem):
                 continue

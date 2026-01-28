@@ -1,23 +1,25 @@
 from __future__ import annotations
 
+import re
 from enum import Enum, auto
 
 import pygame.mouse
+import pygame.scrap
 from pygame.constants import (
     K_BACKSPACE,
     K_RETURN,
     K_LCTRL,
     SYSTEM_CURSOR_IBEAM,
     SYSTEM_CURSOR_ARROW,
+    K_v,
 )
 
 from core.focus_manager import FOCUS_MANAGER
 from event.handler import MouseHandler, KeyHandler
+from util.timer import CountDownTimer
 from view import View
 from view._valued import Valued
 from view.text import TextView, ContentAlign
-from util.timer import CountDownTimer
-
 
 _INITIAL_COOLDOWN = 500
 _REPEAT_COOLDOWN = 10
@@ -44,6 +46,8 @@ class InputView(View, Valued[str]):
         self._initial_timer = CountDownTimer(_INITIAL_COOLDOWN)
         self._repeat_timer = CountDownTimer(_REPEAT_COOLDOWN)
 
+        self._pattern: str = ""
+
         self._ctrl_pressed = False
 
         mouse_handler = MouseHandler()
@@ -63,7 +67,7 @@ class InputView(View, Valued[str]):
 
         @key_handler.on_text_input
         def on_text_input(_view: View, text: str) -> None:
-            self._text_view.value += text
+            self._input_text(text)
             return
 
         @key_handler.on_key_down
@@ -85,6 +89,10 @@ class InputView(View, Valued[str]):
             if key == K_LCTRL:
                 self._ctrl_pressed = True
                 return False
+
+            if key == K_v:
+                self._input_text(pygame.scrap.get_text())
+                return True
 
             return False
 
@@ -115,6 +123,15 @@ class InputView(View, Valued[str]):
     def text_view(self) -> TextView:
         return self._text_view
 
+    @property
+    def pattern(self) -> str:
+        return self._pattern
+
+    @pattern.setter
+    def pattern(self, value: str) -> None:
+        self._pattern = value
+        return
+
     def update(self, delta: int) -> None:
         self._text_view.style.size = self.style.size
 
@@ -140,3 +157,18 @@ class InputView(View, Valued[str]):
                     self._removal_state = _RemovalState.REMOVING
 
                 self._repeat_timer.update(delta)
+        return
+
+    def _input_text(self, text: str) -> None:
+        for character in text:
+            candidate_text = self._text_view.value + character
+
+            if self._pattern == "":
+                self._text_view.value = candidate_text
+                return
+
+            # check pattern
+            if re.fullmatch(self._pattern, candidate_text) is None:
+                continue
+            self._text_view.value = candidate_text
+        return
