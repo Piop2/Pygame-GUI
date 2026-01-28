@@ -29,13 +29,13 @@ class KeyEvent(InputEvent):
 
 @dataclass(frozen=True)
 class MouseDownEvent(MouseEvent):
-    key: int
+    key: MouseButton
     pos: Vector2
 
 
 @dataclass(frozen=True)
 class MouseUpEvent(MouseEvent):
-    key: int
+    key: MouseButton
     pos: Vector2
 
 

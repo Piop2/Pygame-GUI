@@ -30,7 +30,7 @@ discord_box.add_handler((mouse_handler := MouseHandler()))
 
 
 @mouse_handler.on_mouse_down
-def on_mouse_down(_view: ButtonView, key: int, _pos: Vector2) -> bool:
+def on_mouse_down(_view: ButtonView, key: MouseButton, _pos: Vector2) -> bool:
     if key == MouseButton.LEFT:
         print("PUSH DOWN!")
         return True
@@ -38,11 +38,17 @@ def on_mouse_down(_view: ButtonView, key: int, _pos: Vector2) -> bool:
 
 
 @mouse_handler.on_mouse_up
-def on_mouse_up(_view: ButtonView, key: int, _pos: Vector2) -> bool:
+def on_mouse_up(_view: ButtonView, key: MouseButton, _pos: Vector2) -> bool:
     if key == MouseButton.LEFT:
         print("PUSH UP!")
         return True
     return False
+
+@mouse_handler.on_click
+def on_click(_view: ButtonView, key: MouseButton) -> None:
+    if key == MouseButton.LEFT:
+        print("CLICK!")
+    return
 
 
 input_box = InputView()
