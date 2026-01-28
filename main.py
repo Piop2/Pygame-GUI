@@ -1,8 +1,12 @@
 import pygame
+from pygame.math import Vector2
 
 from core.input_manager import INPUT_MANAGER
 from core.screen import Screen, Viewport
-from view.button import ButtonView
+from event.handler import MouseHandler
+from view import InputView
+from view.button.button import ButtonView
+from model import MouseButton
 
 WINDOW_SIZE = (800, 800)
 BUTTON_SIZE = (150, 45)
@@ -22,8 +26,33 @@ discord_box.transform.y = 40
 discord_box.style.background_color.update(88, 101, 242)
 discord_box.style.size = BUTTON_SIZE
 discord_box.style.border_radius = 11
+discord_box.add_handler((mouse_handler := MouseHandler()))
+
+
+@mouse_handler.on_mouse_down
+def on_mouse_down(_view: ButtonView, key: int, _pos: Vector2) -> bool:
+    if key == MouseButton.LEFT:
+        print("PUSH DOWN!")
+        return True
+    return False
+
+
+@mouse_handler.on_mouse_up
+def on_mouse_up(_view: ButtonView, key: int, _pos: Vector2) -> bool:
+    if key == MouseButton.LEFT:
+        print("PUSH UP!")
+        return True
+    return False
+
+
+input_box = InputView()
+input_box.transform.x = 150
+input_box.transform.y = 150
+input_box.style.size = (500, 45)
+input_box.style.background_color.update(250, 250, 250)
 
 ui_screen.add_node(discord_box)
+ui_screen.add_node(input_box)
 
 INPUT_MANAGER.activate_screen(ui_screen)
 

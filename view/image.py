@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from pygame import Surface
 
-from core.view import View
+from view.base import View
 
 
 class ImageView(View):

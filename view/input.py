@@ -11,11 +11,10 @@ from pygame.constants import (
     SYSTEM_CURSOR_ARROW,
 )
 
-from core.interact.keyboard import KeyboardInteractable
-from core.interact.mouse import MouseInteractable
-from core.view import View
-from core.interface.valued import Valued
-from model.event import UIEvent
+from core.focus_manager import FOCUS_MANAGER
+from event.handler import MouseHandler, KeyHandler
+from view import View
+from view._valued import Valued
 from view.text import TextView, ContentAlign
 from util.timer import CountDownTimer
 
@@ -32,11 +31,9 @@ class _RemovalState(Enum):
     REPEAT_COOLDOWN = auto()
 
 
-class InputView(View, Valued[str], KeyboardInteractable, MouseInteractable):
+class InputView(View, Valued[str]):
     def __init__(self) -> None:
         super().__init__()
-        self._init_keyboard_interaction()
-        self._init_mouse_interaction()
 
         self._text_view = TextView()
         self._text_view.content_align = ContentAlign.MIDDLE_LEFT
@@ -48,6 +45,62 @@ class InputView(View, Valued[str], KeyboardInteractable, MouseInteractable):
         self._repeat_timer = CountDownTimer(_REPEAT_COOLDOWN)
 
         self._ctrl_pressed = False
+
+        mouse_handler = MouseHandler()
+        key_handler = KeyHandler()
+        self.add_handler(mouse_handler)
+        self.add_handler(key_handler)
+
+        @mouse_handler.on_mouse_enter
+        def on_mouse_enter(_view: View) -> None:
+            pygame.mouse.set_cursor(SYSTEM_CURSOR_IBEAM)
+            return
+
+        @mouse_handler.on_mouse_exit
+        def on_mouse_exit(_view: View) -> None:
+            pygame.mouse.set_cursor(SYSTEM_CURSOR_ARROW)
+            return
+
+        @key_handler.on_text_input
+        def on_text_input(_view: View, text: str) -> None:
+            self._text_view.value += text
+            return
+
+        @key_handler.on_key_down
+        def on_key_down(_view: View, key: int) -> bool:
+            if key == K_BACKSPACE:
+                if not self._text_view.value:
+                    return True
+
+                self._text_view.value = self._text_view.value[:-1]
+
+                self._removal_state = _RemovalState.INITIAL_COOLDOWN
+                self._initial_timer.reset()
+                return True
+
+            if key == K_RETURN:
+                FOCUS_MANAGER.unfocus(self)
+                return True
+
+            if key == K_LCTRL:
+                self._ctrl_pressed = True
+                return False
+
+            return False
+
+        @key_handler.on_key_up
+        def on_key_up(_view: View, key: int) -> bool:
+            if key == K_BACKSPACE:
+                self._removal_state = _RemovalState.IDLE
+                return False
+
+            if key == K_LCTRL:
+                self._ctrl_pressed = False
+                return False
+
+            return False
+
+        return
 
     @property
     def value(self) -> str:
@@ -87,53 +140,3 @@ class InputView(View, Valued[str], KeyboardInteractable, MouseInteractable):
                     self._removal_state = _RemovalState.REMOVING
 
                 self._repeat_timer.update(delta)
-
-    def _process_event(self, event: UIEvent) -> bool:
-        if self._process_keyboard_event(event):
-            return True
-
-        if self._process_mouse_event(event):
-            return True
-
-        return False
-
-    def mouse_enter(self) -> None:
-        pygame.mouse.set_cursor(SYSTEM_CURSOR_IBEAM)
-
-    def mouse_exit(self) -> None:
-        pygame.mouse.set_cursor(SYSTEM_CURSOR_ARROW)
-
-    def input(self, text: str) -> None:
-        self._text_view.value += text
-
-    def key_down(self, key: int) -> bool:
-        if key == K_BACKSPACE:
-            if not self._text_view.value:
-                return True
-
-            self._text_view.value = self._text_view.value[:-1]
-
-            self._removal_state = _RemovalState.INITIAL_COOLDOWN
-            self._initial_timer.reset()
-            return True
-
-        if key == K_RETURN:
-            self.unfocus()
-            return True
-
-        if key == K_LCTRL:
-            self._ctrl_pressed = True
-            return False
-
-        return False
-
-    def key_up(self, key: int) -> bool:
-        if key == K_BACKSPACE:
-            self._removal_state = _RemovalState.IDLE
-            return False
-
-        if key == K_LCTRL:
-            self._ctrl_pressed = False
-            return False
-
-        return False

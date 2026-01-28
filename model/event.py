@@ -70,5 +70,5 @@ class KeyUpEvent(KeyEvent):
 
 
 @dataclass(frozen=True)
-class TextInputEvent(InputEvent):
+class TextInputEvent(KeyEvent):
     text: str

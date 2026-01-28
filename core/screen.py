@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from copy import copy
+from copy import deepcopy
 from dataclasses import dataclass
 
 import pygame.transform
@@ -32,7 +32,7 @@ class Screen(CanvasItem, RootNode):
             if not isinstance(child, CanvasItem):
                 continue
 
-            child_event = copy(event)
+            child_event = deepcopy(event)
             if isinstance(
                 child_event, (MouseDownEvent, MouseUpEvent, MouseMotionEvent)
             ):

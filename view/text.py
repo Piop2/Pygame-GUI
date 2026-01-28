@@ -4,8 +4,8 @@ from __future__ import annotations
 from pygame import Font, Surface, Color
 from pygame.font import get_default_font
 
-from core.view import View
-from core.interface.valued import Valued
+from view import View
+from view._valued import Valued
 from model.align import ContentAlign, calc_aligned_pos
 
 
@@ -25,6 +25,7 @@ class TextView(View, Valued[str]):
 
         self._fit_content = False
         self._content_align = ContentAlign.TOP_LEFT
+        return
 
     @property
     def value(self) -> str:
@@ -33,6 +34,7 @@ class TextView(View, Valued[str]):
     @value.setter
     def value(self, value: str) -> None:
         self._value = value
+        return
 
     @property
     def font(self) -> str:
@@ -42,6 +44,7 @@ class TextView(View, Valued[str]):
     def font(self, value: str) -> None:
         self._font = value
         self._font_renderer = Font(value, self._font_size)
+        return
 
     @property
     def font_size(self) -> int:
@@ -51,6 +54,7 @@ class TextView(View, Valued[str]):
     def font_size(self, value: int) -> None:
         self._font_size = value
         self._font_renderer.set_point_size(value)
+        return
 
     @property
     def font_color(self) -> Color:
@@ -59,6 +63,7 @@ class TextView(View, Valued[str]):
     @font_color.setter
     def font_color(self, value: Color) -> None:
         self._font_color = value
+        return
 
     @property
     def fit_content(self) -> bool:
@@ -67,6 +72,7 @@ class TextView(View, Valued[str]):
     @fit_content.setter
     def fit_content(self, value: bool) -> None:
         self._fit_content = value
+        return
 
     @property
     def content_align(self) -> ContentAlign:
@@ -75,10 +81,12 @@ class TextView(View, Valued[str]):
     @content_align.setter
     def content_align(self, value: ContentAlign) -> None:
         self._content_align = value
+        return
 
-    def update(self, delta: int) -> None:
+    def update(self, _delta: int) -> None:
         if self._fit_content:
             self._style.size = self._font_renderer.size(self._value)
+        return
 
     def _draw(self, surface: Surface) -> None:
         x, y = (0, 0)
