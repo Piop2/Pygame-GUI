@@ -26,6 +26,7 @@ OnMouseEnterCallback = Callable[[CanvasItem], None]
 OnMouseExitCallback = Callable[[CanvasItem], None]
 OnClickCallback = Callable[[CanvasItem, MouseButton], None]
 
+
 class ClickState(Enum):
     IDLE = auto()
     PRESSED = auto()
@@ -86,7 +87,10 @@ class MouseHandler(BaseEventHandler):
         if not self._entered:
             return False
 
-        if self._click_state == ClickState.PRESSED and event.key == self._active_click_key:
+        if (
+            self._click_state == ClickState.PRESSED
+            and event.key == self._active_click_key
+        ):
             self._on_click(view, self._active_click_key)
         self._click_state = ClickState.IDLE
         self._active_click_key = None
