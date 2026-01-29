@@ -18,9 +18,9 @@ from model import (
     InputEvent,
 )
 
-OnMouseUpCallback = Callable[[CanvasItem, MouseButton, Vector2], bool]
-OnMouseDownCallback = Callable[[CanvasItem, MouseButton, Vector2], bool]
-OnMouseMotionCallback = Callable[[CanvasItem, Vector2], bool]
+OnMouseUpCallback = Callable[[CanvasItem, MouseButton, bool], bool]
+OnMouseDownCallback = Callable[[CanvasItem, MouseButton], bool]
+OnMouseMotionCallback = Callable[[CanvasItem, Vector2, bool], bool]
 OnMouseScrollCallback = Callable[[CanvasItem, Vector2], bool]
 OnMouseEnterCallback = Callable[[CanvasItem], None]
 OnMouseExitCallback = Callable[[CanvasItem], None]
@@ -36,13 +36,13 @@ class MouseHandler(BaseEventHandler):
     def __init__(self) -> None:
         super().__init__()
 
-        self._on_mouse_up: OnMouseUpCallback = lambda v, k, p: False
-        self._on_mouse_down: OnMouseDownCallback = lambda v, k, p: False
-        self._on_mouse_motion: OnMouseMotionCallback = lambda v, p: False
+        self._on_mouse_up: OnMouseUpCallback = lambda v, b, i: False
+        self._on_mouse_down: OnMouseDownCallback = lambda v, b: False
+        self._on_mouse_motion: OnMouseMotionCallback = lambda v, p, i: False
         self._on_mouse_scroll: OnMouseScrollCallback = lambda v, d: False
         self._on_mouse_enter: OnMouseEnterCallback = lambda v: None
         self._on_mouse_exit: OnMouseExitCallback = lambda v: None
-        self._on_click: OnClickCallback = lambda v, k: None
+        self._on_click: OnClickCallback = lambda v, b: None
 
         self._handler = {
             MouseUpEvent: self.mouse_up,
@@ -52,7 +52,7 @@ class MouseHandler(BaseEventHandler):
         }
 
         self._click_state = ClickState.IDLE
-        self._active_click_key: Optional[MouseButton] = None
+        self._active_click_button: Optional[MouseButton] = None
 
         self._entered = False
         return
@@ -84,28 +84,36 @@ class MouseHandler(BaseEventHandler):
         return
 
     def mouse_up(self, view: CanvasItem, event: MouseUpEvent) -> bool:
-        if not self._entered:
+        if not FOCUS_MANAGER.is_focused(view):
             return False
+        if not self._on_mouse_up(view, event.button, self._entered):
+            return True
+
+        # No handling needed: click_state is reset by on_mouse_exit
+        # when mouse_up occurs outside a hit.
 
         if (
             self._click_state == ClickState.PRESSED
-            and event.key == self._active_click_key
+            and event.button == self._active_click_button
         ):
-            self._on_click(view, self._active_click_key)
-        self._click_state = ClickState.IDLE
-        self._active_click_key = None
+            self._on_click(view, self._active_click_button)
 
-        return self._on_mouse_up(view, event.key, event.pos)
+        self._click_state = ClickState.IDLE
+        self._active_click_button = None
+        return True
 
     def mouse_down(self, view: CanvasItem, event: MouseDownEvent) -> bool:
         if not self._entered:
             return False
 
-        self._active_click_key = event.key
+        if not self._on_mouse_down(view, event.button):
+            return False
+
+        self._active_click_button = event.button
         self._click_state = ClickState.PRESSED
 
         FOCUS_MANAGER.focus(view)
-        return self._on_mouse_down(view, event.key, event.pos)
+        return True
 
     def mouse_motion(self, view: CanvasItem, event: MouseMotionEvent) -> bool:
         is_hit = view.hit_test(event.pos.x, event.pos.y)
@@ -117,10 +125,10 @@ class MouseHandler(BaseEventHandler):
             self.mouse_exit(view)
             self._entered = False
 
-        if not self._entered:
-            return False
+        if FOCUS_MANAGER.is_focused(view) or self._entered:
+            return self._on_mouse_motion(view, event.pos, self._entered)
 
-        return self._on_mouse_motion(view, event.pos)
+        return False
 
     def mouse_scroll(self, view: CanvasItem, event: MouseScrollEvent) -> bool:
         if not self._entered:
@@ -132,14 +140,14 @@ class MouseHandler(BaseEventHandler):
         return self._on_mouse_enter(view)
 
     def mouse_exit(self, view: CanvasItem) -> None:
-        self._active_click_key = None
+        self._active_click_button = None
         self._click_state = ClickState.IDLE
 
         return self._on_mouse_exit(view)
 
     def click(self, view: CanvasItem) -> None:
-        if self._active_click_key is None:
+        if self._active_click_button is None:
             raise RuntimeError
 
-        self._on_click(view, self._active_click_key)
+        self._on_click(view, self._active_click_button)
         return

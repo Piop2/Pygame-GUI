@@ -16,6 +16,7 @@ from pygame.constants import (
 
 from core.focus_manager import FOCUS_MANAGER
 from event.handler import MouseHandler, KeyHandler
+from model import MouseButton
 from util.timer import CountDownTimer
 from view import View
 from view._valued import Valued
@@ -54,6 +55,13 @@ class InputView(View, Valued[str]):
         key_handler = KeyHandler()
         self.add_handler(mouse_handler)
         self.add_handler(key_handler)
+
+        @mouse_handler.on_mouse_down
+        def on_mouse_down(_view: View, button: MouseButton) -> bool:
+            if button == MouseButton.LEFT:
+                return True
+
+            return False
 
         @mouse_handler.on_mouse_enter
         def on_mouse_enter(_view: View) -> None:

@@ -20,6 +20,20 @@ class CheckBoxView(View, Valued[bool]):
         mouse_handler = MouseHandler()
         self._dispatcher.add_handler(mouse_handler)
 
+        @mouse_handler.on_mouse_down
+        def on_mouse_down(_view: CheckBoxView, button: MouseButton) -> bool:
+            if button == MouseButton.LEFT:
+                return True
+            return False
+
+        @mouse_handler.on_mouse_up
+        def on_mouse_up(
+            _view: CheckBoxView, button: MouseButton, _is_hit: bool
+        ) -> bool:
+            if button == MouseButton.LEFT:
+                return True
+            return False
+
         @mouse_handler.on_mouse_enter
         def on_mouse_enter(_view: CheckBoxView) -> None:
             pygame.mouse.set_cursor(pygame.SYSTEM_CURSOR_HAND)
@@ -31,9 +45,10 @@ class CheckBoxView(View, Valued[bool]):
             return
 
         @mouse_handler.on_click
-        def on_click(_view: CheckBoxView, key: MouseButton) -> None:
-            if key == MouseButton.LEFT:
+        def on_click(_view: CheckBoxView, button: MouseButton) -> None:
+            if button == MouseButton.LEFT:
                 self._value = not self._value
+            return
 
         return
 
