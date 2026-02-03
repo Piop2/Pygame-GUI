@@ -1,12 +1,41 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 
 from pygame import Font, Surface, Color
 from pygame.font import get_default_font
+from pygame.math import Vector2
 
 from view import View
 from view._valued import Valued
 from model.align import ContentAlign, calc_aligned_pos
+
+
+@dataclass(frozen=True)
+class TextLayout:
+    _font: Font
+    _size: tuple[int, int]
+
+    _fit_content: bool
+    _align: ContentAlign
+
+    _text: str
+
+    def get_font_height(self) -> int:
+        return self._font.get_height()
+
+    def caret_pos(self, index: int) -> Vector2:
+        x, y = 0, 0
+        if not self._fit_content:
+            x, y = calc_aligned_pos(
+                self._align,
+                self._size,
+                self._font.size(self._text),
+            )
+
+        return Vector2(x + self._font.size(self._text[:index])[0], y)
+
+    # def hit_test
 
 
 class TextView(View, Valued[str]):
@@ -99,4 +128,14 @@ class TextView(View, Valued[str]):
 
         surface.blit(
             self._font_renderer.render(self._value, True, self._font_color), (x, y)
+        )
+        return
+
+    def layout(self) -> TextLayout:
+        return TextLayout(
+            self._font_renderer,
+            self._style.size,
+            self._fit_content,
+            self._content_align,
+            self._value,
         )

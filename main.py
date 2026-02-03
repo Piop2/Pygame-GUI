@@ -3,7 +3,7 @@ import pygame
 from core.input_manager import INPUT_MANAGER
 from core.screen import Screen, Viewport
 from event.handler import MouseHandler
-from view import ButtonView, InputView, CheckBoxView
+from view import ButtonView, InputBoxView, CheckBoxView
 from model import MouseButton
 
 WINDOW_SIZE = (800, 800)
@@ -53,7 +53,7 @@ def on_click(_view: ButtonView, key: MouseButton) -> None:
     return
 
 
-input_box = InputView()
+input_box = InputBoxView()
 input_box.text_view.font = "asset/gg sans Medium.ttf"
 input_box.transform.x = 150
 input_box.transform.y = 150

@@ -11,6 +11,7 @@ from core.node import RootNode
 from core.canvas_item import CanvasItem
 from event.dispatcher import EventDispatcher
 from event.handler import MouseHandler
+from model import MouseButton
 from model.event import InputEvent, MouseDownEvent, MouseUpEvent, MouseMotionEvent
 
 
@@ -30,7 +31,13 @@ class Screen(CanvasItem, RootNode):
         self._transform.y = position[1]
 
         self.__dispatcher: EventDispatcher = EventDispatcher()
-        self.__dispatcher.add_handler(MouseHandler())
+        handler = MouseHandler()
+
+        @handler.on_mouse_down
+        def on_mouse_down(_view: CanvasItem, _button: MouseButton) -> bool:
+            return True
+
+        self.__dispatcher.add_handler(handler)
         return
 
     @override
