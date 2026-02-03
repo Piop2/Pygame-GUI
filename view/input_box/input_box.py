@@ -218,9 +218,9 @@ class InputBoxView(View, Valued[str]):
     def _input_text(self, text: str) -> None:
         for character in text:
             candidate_text = (
-                self._text_view.value[: self._caret_index + 1]
+                self._text_view.value[: self._caret_index]
                 + character
-                + self._text_view.value[self._caret_index + 1 :]
+                + self._text_view.value[self._caret_index :]
             )
 
             if self._pattern == "":
