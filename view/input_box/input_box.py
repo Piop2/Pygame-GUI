@@ -24,13 +24,14 @@ from view import View
 from view._valued import Valued
 from view.text import TextView, ContentAlign
 from view.text.caret import CaretView, CaretState
+from view.input_box._action import Action
 
 _INITIAL_COOLDOWN = 500
 _REPEAT_COOLDOWN = 10
 
 
 class _RemovalState(Enum):
-    IDLE = auto()
+    REMOVING_ONCE = auto()
     INITIAL_COOLDOWN = auto()
 
     REMOVING = auto()
@@ -41,7 +42,6 @@ class InputBoxView(View, Valued[str]):
     def __init__(self) -> None:
         super().__init__()
 
-        self._removal_state = _RemovalState.IDLE
         self._initial_timer = CountDownTimer(_INITIAL_COOLDOWN)
         self._repeat_timer = CountDownTimer(_REPEAT_COOLDOWN)
 
@@ -50,6 +50,44 @@ class InputBoxView(View, Valued[str]):
         self._ctrl_pressed = False
 
         self._caret_index = 0
+
+        # ---------- Actions ---------- #
+        self._removal_action = Action()
+        self._removal_action.set_action(_RemovalState.REMOVING_ONCE)
+
+        @self._removal_action.register_handler("press", _RemovalState.REMOVING_ONCE)
+        def remove_once():
+            self._remove_text()
+            return _RemovalState.INITIAL_COOLDOWN
+
+        @self._removal_action.register_handler(
+            "press", _RemovalState.INITIAL_COOLDOWN, _INITIAL_COOLDOWN
+        )
+        def cooldown():
+            return _RemovalState.REMOVING
+
+        @self._removal_action.register_handler("press", _RemovalState.REMOVING)
+        def remove():
+            self._remove_text()
+            return _RemovalState.REPEAT_COOLDOWN
+
+        @self._removal_action.register_handler(
+            "press", _RemovalState.REPEAT_COOLDOWN, _REPEAT_COOLDOWN
+        )
+        def remove_cooldown():
+            return _RemovalState.REMOVING
+
+        @self._removal_action.register_handler(
+            "release",
+            (
+                _RemovalState.REMOVING_ONCE,
+                _RemovalState.INITIAL_COOLDOWN,
+                _RemovalState.REMOVING,
+                _RemovalState.REPEAT_COOLDOWN,
+            ),
+        )
+        def reset():
+            return _RemovalState.REMOVING_ONCE
 
         # ---------- Child Views ---------- #
         # Text View
@@ -94,10 +132,7 @@ class InputBoxView(View, Valued[str]):
                 if not self._text_view.value:
                     return True
 
-                self._remove_text()
-
-                self._removal_state = _RemovalState.INITIAL_COOLDOWN
-                self._initial_timer.reset()
+                self._removal_action.press()
                 return True
 
             if key == K_RETURN:
@@ -124,7 +159,7 @@ class InputBoxView(View, Valued[str]):
         @key_handler.on_key_up
         def on_key_up(_view: View, key: int) -> bool:
             if key == K_BACKSPACE:
-                self._removal_state = _RemovalState.IDLE
+                self._removal_action.release()
                 return False
 
             if key == K_LCTRL:
@@ -160,27 +195,7 @@ class InputBoxView(View, Valued[str]):
     def update(self, delta: int) -> None:
         self._text_view.style.size = self.style.size
 
-        match self._removal_state:
-            case _RemovalState.IDLE:
-                pass
-
-            case _RemovalState.INITIAL_COOLDOWN:
-                if self._initial_timer.is_done():
-                    self._removal_state = _RemovalState.REMOVING
-
-                self._initial_timer.update(delta)
-
-            case _RemovalState.REMOVING:
-                self._remove_text()
-
-                self._removal_state = _RemovalState.REPEAT_COOLDOWN
-                self._repeat_timer.reset()
-
-            case _RemovalState.REPEAT_COOLDOWN:
-                if self._repeat_timer.is_done():
-                    self._removal_state = _RemovalState.REMOVING
-
-                self._repeat_timer.update(delta)
+        self._removal_action.update(delta)
 
         if FOCUS_MANAGER.is_focused(self):
             self._caret_view.text_layout = self._text_view.layout()
@@ -191,6 +206,8 @@ class InputBoxView(View, Valued[str]):
         return
 
     def _set_caret_index(self, value: int) -> None:
+        self._caret_view.state = CaretState.WORKING
+
         if value > (text_length := len(self._text_view.value)):
             self._caret_index = text_length
             return
@@ -212,7 +229,6 @@ class InputBoxView(View, Valued[str]):
                 + self._text_view.value[self._caret_index :]
             )
         self._set_caret_index(self._caret_index - 1)
-        self._caret_view.state = CaretState.WORKING
         return
 
     def _input_text(self, text: str) -> None:
@@ -226,7 +242,6 @@ class InputBoxView(View, Valued[str]):
             if self._pattern == "":
                 self._text_view.value = candidate_text
                 self._set_caret_index(self._caret_index + 1)
-                self._caret_view.state = CaretState.WORKING
                 return
 
             # check pattern
@@ -234,5 +249,4 @@ class InputBoxView(View, Valued[str]):
                 continue
             self._text_view.value = candidate_text
             self._set_caret_index(self._caret_index + 1)
-            self._caret_view.state = CaretState.WORKING
         return
