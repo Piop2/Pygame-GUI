@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from enum import Enum, auto
+from typing import Callable
 
 import pygame.mouse
 import pygame.scrap
@@ -19,31 +20,65 @@ from pygame.constants import (
 from core.focus_manager import FOCUS_MANAGER
 from event.handler import MouseHandler, KeyHandler
 from model import MouseButton
-from util.timer import CountDownTimer
 from view import View
 from view._valued import Valued
 from view.text import TextView, ContentAlign
 from view.text.caret import CaretView, CaretState
 from view.input_box._action import Action
 
-_INITIAL_COOLDOWN = 500
-_REPEAT_COOLDOWN = 10
 
+def _make_action(handler: Callable[[], None]) -> Action:
+    _INITIAL_COOLDOWN_DURATION = 500
+    _REPEAT_INTERVAL_DURATION = 10
 
-class _RemovalState(Enum):
-    REMOVING_ONCE = auto()
-    INITIAL_COOLDOWN = auto()
+    class State(Enum):
+        ACTION_ONCE = auto()
+        INITIAL_COOLDOWN = auto()
 
-    REMOVING = auto()
-    REPEAT_COOLDOWN = auto()
+        REPEAT_ACTION = auto()
+        REPEAT_INTERVAL = auto()
+
+    action = Action[State]()
+    action.set_action(State.ACTION_ONCE)
+
+    @action.register_handler("press", State.ACTION_ONCE)
+    def remove_once():
+        handler()
+        return State.INITIAL_COOLDOWN
+
+    @action.register_handler(
+        "press", State.INITIAL_COOLDOWN, _INITIAL_COOLDOWN_DURATION
+    )
+    def cooldown():
+        return State.REPEAT_ACTION
+
+    @action.register_handler("press", State.REPEAT_ACTION)
+    def remove():
+        handler()
+        return State.REPEAT_INTERVAL
+
+    @action.register_handler("press", State.REPEAT_INTERVAL, _REPEAT_INTERVAL_DURATION)
+    def remove_cooldown():
+        return State.REPEAT_ACTION
+
+    @action.register_handler(
+        "release",
+        (
+            State.ACTION_ONCE,
+            State.INITIAL_COOLDOWN,
+            State.REPEAT_ACTION,
+            State.REPEAT_INTERVAL,
+        ),
+    )
+    def reset():
+        return State.ACTION_ONCE
+
+    return action
 
 
 class InputBoxView(View, Valued[str]):
     def __init__(self) -> None:
         super().__init__()
-
-        self._initial_timer = CountDownTimer(_INITIAL_COOLDOWN)
-        self._repeat_timer = CountDownTimer(_REPEAT_COOLDOWN)
 
         self._pattern: str = ""
 
@@ -52,42 +87,13 @@ class InputBoxView(View, Valued[str]):
         self._caret_index = 0
 
         # ---------- Actions ---------- #
-        self._removal_action = Action()
-        self._removal_action.set_action(_RemovalState.REMOVING_ONCE)
-
-        @self._removal_action.register_handler("press", _RemovalState.REMOVING_ONCE)
-        def remove_once():
-            self._remove_text()
-            return _RemovalState.INITIAL_COOLDOWN
-
-        @self._removal_action.register_handler(
-            "press", _RemovalState.INITIAL_COOLDOWN, _INITIAL_COOLDOWN
+        self._removal_action = _make_action(lambda: self._remove_text())
+        self._caret_right_action = _make_action(
+            lambda: self._set_caret_index(self._caret_index + 1)
         )
-        def cooldown():
-            return _RemovalState.REMOVING
-
-        @self._removal_action.register_handler("press", _RemovalState.REMOVING)
-        def remove():
-            self._remove_text()
-            return _RemovalState.REPEAT_COOLDOWN
-
-        @self._removal_action.register_handler(
-            "press", _RemovalState.REPEAT_COOLDOWN, _REPEAT_COOLDOWN
+        self._caret_left_action = _make_action(
+            lambda: self._set_caret_index(self._caret_index - 1)
         )
-        def remove_cooldown():
-            return _RemovalState.REMOVING
-
-        @self._removal_action.register_handler(
-            "release",
-            (
-                _RemovalState.REMOVING_ONCE,
-                _RemovalState.INITIAL_COOLDOWN,
-                _RemovalState.REMOVING,
-                _RemovalState.REPEAT_COOLDOWN,
-            ),
-        )
-        def reset():
-            return _RemovalState.REMOVING_ONCE
 
         # ---------- Child Views ---------- #
         # Text View
@@ -148,10 +154,10 @@ class InputBoxView(View, Valued[str]):
                 return True
 
             if key == K_RIGHT:
-                self._set_caret_index(self._caret_index + 1)
+                self._caret_right_action.press()
                 return True
             if key == K_LEFT:
-                self._set_caret_index(self._caret_index - 1)
+                self._caret_left_action.press()
                 return True
 
             return False
@@ -165,6 +171,13 @@ class InputBoxView(View, Valued[str]):
             if key == K_LCTRL:
                 self._ctrl_pressed = False
                 return False
+
+            if key == K_RIGHT:
+                self._caret_right_action.release()
+                return True
+            if key == K_LEFT:
+                self._caret_left_action.release()
+                return True
 
             return False
 
@@ -196,6 +209,8 @@ class InputBoxView(View, Valued[str]):
         self._text_view.style.size = self.style.size
 
         self._removal_action.update(delta)
+        self._caret_left_action.update(delta)
+        self._caret_right_action.update(delta)
 
         if FOCUS_MANAGER.is_focused(self):
             self._caret_view.text_layout = self._text_view.layout()
