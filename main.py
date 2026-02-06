@@ -1,4 +1,5 @@
 import pygame
+from pygame.math import Vector2
 
 from core.input_manager import INPUT_MANAGER
 from core.screen import Screen, Viewport
@@ -28,7 +29,7 @@ discord_box.add_handler((mouse_handler := MouseHandler()))
 
 
 @mouse_handler.on_mouse_down
-def on_mouse_down(_view: ButtonView, key: MouseButton) -> bool:
+def on_mouse_down(_view: ButtonView, key: MouseButton, _pos: Vector2) -> bool:
     if key == MouseButton.LEFT:
         print("PUSH DOWN!")
         return True

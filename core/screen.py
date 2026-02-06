@@ -5,7 +5,8 @@ from copy import deepcopy
 from dataclasses import dataclass
 
 import pygame.transform
-from pygame import Surface
+from pygame.surface import Surface
+from pygame.math import Vector2
 
 from core.node import RootNode
 from core.canvas_item import CanvasItem
@@ -34,7 +35,9 @@ class Screen(CanvasItem, RootNode):
         handler = MouseHandler()
 
         @handler.on_mouse_down
-        def on_mouse_down(_view: CanvasItem, _button: MouseButton) -> bool:
+        def on_mouse_down(
+            _view: CanvasItem, _button: MouseButton, _pos: Vector2
+        ) -> bool:
             return True
 
         self.__dispatcher.add_handler(handler)

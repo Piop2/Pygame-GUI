@@ -16,6 +16,7 @@ from pygame.constants import (
     SYSTEM_CURSOR_IBEAM,
     SYSTEM_CURSOR_ARROW,
 )
+from pygame.math import Vector2
 
 from core.focus_manager import FOCUS_MANAGER
 from event.handler import MouseHandler, KeyHandler
@@ -111,8 +112,9 @@ class InputBoxView(View, Valued[str]):
         self.add_handler(key_handler)
 
         @mouse_handler.on_mouse_down
-        def on_mouse_down(_view: View, button: MouseButton) -> bool:
+        def on_mouse_down(_view: View, button: MouseButton, pos: Vector2) -> bool:
             if button == MouseButton.LEFT:
+                self._set_caret_index(self.text_view.layout().get_caret_at(pos))
                 return True
 
             return False

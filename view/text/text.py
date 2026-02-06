@@ -35,7 +35,25 @@ class TextLayout:
 
         return Vector2(x + self._font.size(self._text[:index])[0], y)
 
-    # def hit_test
+    def get_caret_at(self, pos: Vector2) -> int:
+        x, _y = 0, 0
+        if not self._fit_content:
+            x, _y = calc_aligned_pos(
+                self._align, self._size, self._font.size(self._text)
+            )
+
+        caret_index = 0
+        total_width = x
+
+        for text in self._text:
+            text_width = self._font.size(text)[0]
+
+            if pos.x <= total_width + text_width // 2:
+                break
+            total_width += text_width
+            caret_index += 1
+
+        return caret_index
 
 
 class TextView(View, Valued[str]):

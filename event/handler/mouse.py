@@ -19,7 +19,7 @@ from model import (
 )
 
 OnMouseUpCallback = Callable[[CanvasItem, MouseButton, bool], bool]
-OnMouseDownCallback = Callable[[CanvasItem, MouseButton], bool]
+OnMouseDownCallback = Callable[[CanvasItem, MouseButton, Vector2], bool]
 OnMouseMotionCallback = Callable[[CanvasItem, Vector2, bool], bool]
 OnMouseScrollCallback = Callable[[CanvasItem, Vector2], bool]
 OnMouseEnterCallback = Callable[[CanvasItem], None]
@@ -37,7 +37,7 @@ class MouseHandler(BaseEventHandler):
         super().__init__()
 
         self._on_mouse_up: OnMouseUpCallback = lambda v, b, i: False
-        self._on_mouse_down: OnMouseDownCallback = lambda v, b: False
+        self._on_mouse_down: OnMouseDownCallback = lambda v, b, p: False
         self._on_mouse_motion: OnMouseMotionCallback = lambda v, p, i: False
         self._on_mouse_scroll: OnMouseScrollCallback = lambda v, d: False
         self._on_mouse_enter: OnMouseEnterCallback = lambda v: None
@@ -106,7 +106,7 @@ class MouseHandler(BaseEventHandler):
         if not self._entered:
             return False
 
-        if not self._on_mouse_down(view, event.button):
+        if not self._on_mouse_down(view, event.button, event.pos):
             return False
 
         self._active_click_button = event.button
