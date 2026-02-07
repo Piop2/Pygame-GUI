@@ -76,12 +76,13 @@ class CaretView(View, Valued[CaretPos]):
                     self._timer.reset()
 
                 self._timer.update(delta)
-            case CaretState.WORKING if not has_selection:
+            case CaretState.WORKING:
                 self._state = CaretState.IDLE
                 self._visible = True
                 self._timer.reset()
-            case CaretState.WORKING if has_selection:
-                self._visible = True
+
+        if has_selection:
+            self._visible = True
 
         if self._text_layout is not None:
             self._style.height = self._text_layout.get_font_height()

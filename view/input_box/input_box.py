@@ -7,6 +7,7 @@ from typing import Callable, Optional
 import pygame.mouse
 import pygame.scrap
 from pygame.constants import (
+    K_a,
     K_v,
     K_BACKSPACE,
     K_RETURN,
@@ -137,17 +138,15 @@ class InputBoxView(View, Valued[str]):
             return False
 
         @mouse_handler.on_mouse_motion
-        def on_mouse_motion(_view: View, pos: Vector2, is_entered: bool) -> bool:
-            if not is_entered:
-                return False
-
+        def on_mouse_motion(_view: View, pos: Vector2, _is_entered: bool) -> bool:
             if self._mouse_left_pressed:
                 self._dragging = True
 
             if self._dragging:
                 self._set_caret_pos(self._text_layout.get_caret_at(pos))
+                return True
 
-            return True
+            return False
 
         @mouse_handler.on_mouse_enter
         def on_mouse_enter(_view: View) -> None:
@@ -185,6 +184,12 @@ class InputBoxView(View, Valued[str]):
             if key == K_v:
                 self._input_text(pygame.scrap.get_text())
                 return True
+
+            if key == K_a:
+                self._caret_pos.start = 0
+                self._caret_pos.end = len(self._text_view.value)
+                return True
+
             if key == K_RIGHT:
                 if self._shift_pressed:
                     self._dragging = True
@@ -195,16 +200,18 @@ class InputBoxView(View, Valued[str]):
 
                 self._caret_right_action.press()
                 return True
+
             if key == K_LEFT:
                 if self._shift_pressed:
                     self._dragging = True
 
                 elif not self._dragging and self._caret_pos.has_selection():
-                    self._set_caret_pos(self._caret_pos.end)
+                    self._set_caret_pos(self._caret_pos.start)
                     return True
 
                 self._caret_left_action.press()
                 return True
+
             if key == K_LSHIFT:
                 self._shift_pressed = True
                 return True
