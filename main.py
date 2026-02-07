@@ -60,7 +60,6 @@ input_box.transform.x = 150
 input_box.transform.y = 150
 input_box.style.size = (500, 45)
 input_box.style.background_color.update(250, 250, 250)
-input_box.pattern = r"[0-9.]+"
 
 check_box = CheckBoxView()
 check_box.transform.x = 500
