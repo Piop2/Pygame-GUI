@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from enum import Enum, auto
-from typing import Callable
+from typing import Callable, Optional
 
 import pygame.mouse
 import pygame.scrap
@@ -13,6 +13,7 @@ from pygame.constants import (
     K_LCTRL,
     K_RIGHT,
     K_LEFT,
+    K_LSHIFT,
     SYSTEM_CURSOR_IBEAM,
     SYSTEM_CURSOR_ARROW,
 )
@@ -23,9 +24,9 @@ from event.handler import MouseHandler, KeyHandler
 from model import MouseButton
 from view import View
 from view._valued import Valued
-from view.text import TextView, ContentAlign
-from view.text.caret import CaretView, CaretState
 from view.input_box._action import Action
+from view.text import TextView, ContentAlign, TextLayout
+from view.text.caret import CaretView, CaretState, CaretPos
 
 
 def _make_action(handler: Callable[[], None]) -> Action:
@@ -84,16 +85,22 @@ class InputBoxView(View, Valued[str]):
         self._pattern: str = ""
 
         self._ctrl_pressed = False
+        self._shift_pressed = False
+        self._mouse_left_pressed = False
 
-        self._caret_index = 0
+        # caret pos: (start_pos, end_pos)
+        self._caret_pos = CaretPos(0, 0)
+        self._dragging = False
+
+        self._text_layout: Optional[TextLayout] = None
 
         # ---------- Actions ---------- #
         self._removal_action = _make_action(lambda: self._remove_text())
         self._caret_right_action = _make_action(
-            lambda: self._set_caret_index(self._caret_index + 1)
+            lambda: self._set_caret_pos(self._caret_pos.end + 1)
         )
         self._caret_left_action = _make_action(
-            lambda: self._set_caret_index(self._caret_index - 1)
+            lambda: self._set_caret_pos(self._caret_pos.end - 1)
         )
 
         # ---------- Child Views ---------- #
@@ -114,10 +121,33 @@ class InputBoxView(View, Valued[str]):
         @mouse_handler.on_mouse_down
         def on_mouse_down(_view: View, button: MouseButton, pos: Vector2) -> bool:
             if button == MouseButton.LEFT:
-                self._set_caret_index(self.text_view.layout().get_caret_at(pos))
+                self._mouse_left_pressed = True
+                self._set_caret_pos(self._text_layout.get_caret_at(pos))
                 return True
 
             return False
+
+        @mouse_handler.on_mouse_up
+        def on_mouse_up(_view: View, button: MouseButton, _is_entered: bool) -> bool:
+            if button == MouseButton.LEFT:
+                self._mouse_left_pressed = False
+                self._dragging = False
+                return True
+
+            return False
+
+        @mouse_handler.on_mouse_motion
+        def on_mouse_motion(_view: View, pos: Vector2, is_entered: bool) -> bool:
+            if not is_entered:
+                return False
+
+            if self._mouse_left_pressed:
+                self._dragging = True
+
+            if self._dragging:
+                self._set_caret_pos(self._text_layout.get_caret_at(pos))
+
+            return True
 
         @mouse_handler.on_mouse_enter
         def on_mouse_enter(_view: View) -> None:
@@ -137,7 +167,8 @@ class InputBoxView(View, Valued[str]):
         @key_handler.on_key_down
         def on_key_down(_view: View, key: int) -> bool:
             if key == K_BACKSPACE:
-                if not self._text_view.value:
+                if self._caret_pos.has_selection():
+                    self._remove_selected_text()
                     return True
 
                 self._removal_action.press()
@@ -154,12 +185,28 @@ class InputBoxView(View, Valued[str]):
             if key == K_v:
                 self._input_text(pygame.scrap.get_text())
                 return True
-
             if key == K_RIGHT:
+                if self._shift_pressed:
+                    self._dragging = True
+
+                elif not self._dragging and self._caret_pos.has_selection():
+                    self._set_caret_pos(self._caret_pos.end)
+                    return True
+
                 self._caret_right_action.press()
                 return True
             if key == K_LEFT:
+                if self._shift_pressed:
+                    self._dragging = True
+
+                elif not self._dragging and self._caret_pos.has_selection():
+                    self._set_caret_pos(self._caret_pos.end)
+                    return True
+
                 self._caret_left_action.press()
+                return True
+            if key == K_LSHIFT:
+                self._shift_pressed = True
                 return True
 
             return False
@@ -179,6 +226,10 @@ class InputBoxView(View, Valued[str]):
                 return True
             if key == K_LEFT:
                 self._caret_left_action.release()
+                return True
+            if key == K_LSHIFT:
+                self._shift_pressed = False
+                self._dragging = False
                 return True
 
             return False
@@ -209,61 +260,81 @@ class InputBoxView(View, Valued[str]):
 
     def update(self, delta: int) -> None:
         self._text_view.style.size = self.style.size
+        self._text_layout = self.text_view.layout()
 
         self._removal_action.update(delta)
         self._caret_left_action.update(delta)
         self._caret_right_action.update(delta)
 
         if FOCUS_MANAGER.is_focused(self):
-            self._caret_view.text_layout = self._text_view.layout()
+            self._caret_view.text_layout = self._text_layout
+            self._caret_view.value = self._caret_pos
+            self._caret_view.update(delta)
         else:
             self._caret_view.text_layout = None
-        self._caret_view.value = self._caret_index
-        self._caret_view.update(delta)
         return
 
-    def _set_caret_index(self, value: int) -> None:
+    def _set_caret_pos(self, pos: int) -> None:
         self._caret_view.state = CaretState.WORKING
 
-        if value > (text_length := len(self._text_view.value)):
-            self._caret_index = text_length
-            return
+        if pos > (text_length := len(self._text_view.value)):
+            pos = text_length
+        elif pos < 0:
+            pos = 0
 
-        if value < 0:
-            self._caret_index = 0
-            return
+        if not self._dragging:
+            self._caret_pos.start = pos
 
-        self._caret_index = value
+        self._caret_pos.end = pos
+        return
+
+    def _remove_selected_text(self) -> None:
+        start: int
+        end: int
+        if self._caret_pos.start <= self._caret_pos.end:
+            start = self._caret_pos.start
+            end = self._caret_pos.end
+        else:
+            start = self._caret_pos.end
+            end = self._caret_pos.start
+
+        self._text_view.value = (
+            self._text_view.value[:start] + self._text_view.value[end:]
+        )
+        self._set_caret_pos(start)
         return
 
     def _remove_text(self) -> None:
-        if self._caret_index == 0:
+        if self._caret_pos.end == 0:
             return
 
         if self._text_view.value:
             self._text_view.value = (
-                self._text_view.value[: self._caret_index - 1]
-                + self._text_view.value[self._caret_index :]
+                self._text_view.value[: self._caret_pos.end - 1]
+                + self._text_view.value[self._caret_pos.end :]
             )
-        self._set_caret_index(self._caret_index - 1)
+        self._set_caret_pos(self._caret_pos.end - 1)
         return
 
     def _input_text(self, text: str) -> None:
+        if self._caret_pos.has_selection():
+            self._remove_selected_text()
+
         for character in text:
             candidate_text = (
-                self._text_view.value[: self._caret_index]
+                self._text_view.value[: self._caret_pos.end]
                 + character
-                + self._text_view.value[self._caret_index :]
+                + self._text_view.value[self._caret_pos.end :]
             )
 
             if self._pattern == "":
                 self._text_view.value = candidate_text
-                self._set_caret_index(self._caret_index + 1)
+                self._set_caret_pos(self._caret_pos.end + 1)
                 return
 
             # check pattern
             if re.fullmatch(self._pattern, candidate_text) is None:
                 continue
             self._text_view.value = candidate_text
-            self._set_caret_index(self._caret_index + 1)
+            self._set_caret_pos(self._caret_pos.end + 1)
         return

@@ -13,40 +13,38 @@ from model.align import ContentAlign, calc_aligned_pos
 
 @dataclass(frozen=True)
 class TextLayout:
-    _font: Font
-    _size: tuple[int, int]
+    font: Font
+    size: tuple[int, int]
 
     _fit_content: bool
     _align: ContentAlign
 
-    _text: str
+    text: str
 
     def get_font_height(self) -> int:
-        return self._font.get_height()
+        return self.font.get_height()
 
     def caret_pos(self, index: int) -> Vector2:
         x, y = 0, 0
         if not self._fit_content:
             x, y = calc_aligned_pos(
                 self._align,
-                self._size,
-                self._font.size(self._text),
+                self.size,
+                self.font.size(self.text),
             )
 
-        return Vector2(x + self._font.size(self._text[:index])[0], y)
+        return Vector2(x + self.font.size(self.text[:index])[0], y)
 
     def get_caret_at(self, pos: Vector2) -> int:
         x, _y = 0, 0
         if not self._fit_content:
-            x, _y = calc_aligned_pos(
-                self._align, self._size, self._font.size(self._text)
-            )
+            x, _y = calc_aligned_pos(self._align, self.size, self.font.size(self.text))
 
         caret_index = 0
         total_width = x
 
-        for text in self._text:
-            text_width = self._font.size(text)[0]
+        for text in self.text:
+            text_width = self.font.size(text)[0]
 
             if pos.x <= total_width + text_width // 2:
                 break

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import pygame.draw
 from pygame import Surface
+from pygame.math import Vector2
 
 from event.handler import MouseHandler
 from model import MouseButton
@@ -21,7 +22,9 @@ class CheckBoxView(View, Valued[bool]):
         self._dispatcher.add_handler(mouse_handler)
 
         @mouse_handler.on_mouse_down
-        def on_mouse_down(_view: CheckBoxView, button: MouseButton) -> bool:
+        def on_mouse_down(
+            _view: CheckBoxView, button: MouseButton, _pos: Vector2
+        ) -> bool:
             if button == MouseButton.LEFT:
                 return True
             return False

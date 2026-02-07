@@ -1,7 +1,10 @@
 from __future__ import annotations
 
-from typing import Optional
+from dataclasses import dataclass
 from enum import Enum, auto
+from typing import Optional
+
+from pygame import Surface
 
 from util.timer import CountDownTimer
 from view import View
@@ -16,12 +19,27 @@ class CaretState(Enum):
     WORKING = auto()
 
 
-class CaretView(View, Valued[int]):
+@dataclass
+class CaretPos:
+    start: int
+    end: int
+
+    def has_selection(self) -> bool:
+        return self.start != self.end
+
+    def normalized(self) -> tuple[int, int]:
+        if self.start <= self.end:
+            return self.start, self.end
+        return self.end, self.start
+
+
+class CaretView(View, Valued[CaretPos]):
     def __init__(self) -> None:
         super().__init__()
         self._style.width = 2
-        self._style.background_color.update(0, 0, 0)
-        self._value = 0
+        self._style.background_color.update(0, 0, 0, 0)
+
+        self._value = CaretPos(0, 0)
 
         self._text_layout: Optional[TextLayout] = None
 
@@ -50,6 +68,7 @@ class CaretView(View, Valued[int]):
         return
 
     def update(self, delta: int) -> None:
+        has_selection = self.value.has_selection()
         match self._state:
             case CaretState.IDLE:
                 if self._timer.is_done():
@@ -57,18 +76,43 @@ class CaretView(View, Valued[int]):
                     self._timer.reset()
 
                 self._timer.update(delta)
-            case CaretState.WORKING:
+            case CaretState.WORKING if not has_selection:
                 self._state = CaretState.IDLE
                 self._visible = True
                 self._timer.reset()
+            case CaretState.WORKING if has_selection:
+                self._visible = True
 
         if self._text_layout is not None:
-            self._transform.pos = self._text_layout.caret_pos(self._value)
             self._style.height = self._text_layout.get_font_height()
+
+            if self.value.has_selection():
+                start, end = self.value.normalized()
+
+                start_pos = self._text_layout.caret_pos(start)
+                self._transform.pos = start_pos
+                self._style.width = self._text_layout.caret_pos(end)[0] - start_pos[0]
+            else:
+                self._transform.pos = self._text_layout.caret_pos(self._value.end)
+                self._style.width = 2
         else:
             self._visible = False
+        return
 
-        if self._visible:
-            self._style.background_color.a = 255
-        else:
-            self._style.background_color.a = 0
+    def _draw(self, surface: Surface) -> None:
+        if not self._visible:
+            return
+
+        surface.fill("black")
+
+        if not self.value.has_selection():
+            return
+
+        start, end = self.value.normalized()
+        surface.blit(
+            self._text_layout.font.render(
+                self._text_layout.text[start:end], True, (255, 255, 255)
+            ),
+            (0, 0),
+        )
+        return
