@@ -9,6 +9,7 @@ import pygame.scrap
 from pygame.constants import (
     K_a,
     K_v,
+    K_z,
     K_BACKSPACE,
     K_RETURN,
     K_LCTRL,
@@ -28,6 +29,7 @@ from view._valued import Valued
 from view.input_box._action import Action
 from view.text import TextView, ContentAlign, TextLayout
 from view.text.caret import CaretView, CaretState, CaretPos
+from view.input_box.memento import Originator, Caretaker
 
 
 def _make_action(handler: Callable[[], None]) -> Action:
@@ -97,6 +99,11 @@ class InputBoxView(View, Valued[str]):
 
         self._text_layout: Optional[TextLayout] = None
 
+        # ---------- Memento ---------- #
+        self._originator = Originator()
+        self._caretaker = Caretaker(self._originator)
+        self._make_backup()
+
         # ---------- Actions ---------- #
         self._removal_action = _make_action(lambda: self._remove_text())
         self._caret_right_action = _make_action(
@@ -105,6 +112,7 @@ class InputBoxView(View, Valued[str]):
         self._caret_left_action = _make_action(
             lambda: self._set_caret_pos(self._caret_pos.end - 1)
         )
+        self._undo_action = _make_action(lambda: self._undo())
 
         # ---------- Child Views ---------- #
         # Text View
@@ -192,14 +200,20 @@ class InputBoxView(View, Valued[str]):
                 self._ctrl_pressed = True
                 return False
 
-            if key == K_v:
-                self._input_text(pygame.scrap.get_text())
-                return True
-
             if key == K_a:
                 if self._ctrl_pressed:
                     self._caret_pos.start = 0
                     self._caret_pos.end = len(self._value)
+                    return True
+                return False
+
+            if key == K_v:
+                self._input_text(pygame.scrap.get_text())
+                return True
+
+            if key == K_z:
+                if self._ctrl_pressed:
+                    self._undo_action.press()
                     return True
                 return False
 
@@ -249,6 +263,10 @@ class InputBoxView(View, Valued[str]):
                 self._ctrl_pressed = False
                 return False
 
+            if key == K_z:
+                self._undo_action.release()
+                return True
+
             if key == K_RIGHT:
                 self._caret_right_action.release()
                 return True
@@ -285,6 +303,7 @@ class InputBoxView(View, Valued[str]):
         self._removal_action.update(delta)
         self._caret_left_action.update(delta)
         self._caret_right_action.update(delta)
+        self._undo_action.update(delta)
 
         if FOCUS_MANAGER.is_focused(self):
             self._caret_view.text_layout = self._text_layout
@@ -338,6 +357,8 @@ class InputBoxView(View, Valued[str]):
         return
 
     def _remove_selected_text(self) -> None:
+        self._make_backup()
+
         start: int
         end: int
         if self._caret_pos.start <= self._caret_pos.end:
@@ -355,6 +376,8 @@ class InputBoxView(View, Valued[str]):
         if self._caret_pos.end == 0:
             return
 
+        self._make_backup()
+
         if self._value:
             self._value = (
                 self._value[: self._caret_pos.end - 1]
@@ -364,6 +387,8 @@ class InputBoxView(View, Valued[str]):
         return
 
     def _input_text(self, text: str) -> None:
+        self._make_backup()
+
         if self._caret_pos.has_selection():
             self._remove_selected_text()
 
@@ -377,11 +402,23 @@ class InputBoxView(View, Valued[str]):
             if self._pattern == "":
                 self._value = candidate_text
                 self._set_caret_pos(self._caret_pos.end + 1)
-                return
+                continue
 
             # check pattern
             if re.fullmatch(self._pattern, candidate_text) is None:
                 continue
             self._value = candidate_text
             self._set_caret_pos(self._caret_pos.end + 1)
+        return
+
+    def _make_backup(self) -> None:
+        self._originator.text_state = self._value
+        self._originator.caret_pos_state = self._caret_pos
+        self._caretaker.make_backup()
+        return
+
+    def _undo(self) -> None:
+        self._caretaker.undo()
+        self._value = self._originator.text_state
+        self._caret_pos = self._originator.caret_pos_state
         return
