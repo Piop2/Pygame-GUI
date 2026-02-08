@@ -54,8 +54,11 @@ class Action[T: Enum]:
 
         return decorator
 
+    def _get_last_handler(self) -> Optional[DelayedHandler]:
+        return self.action_handlers[self._current_event].get(self._current_action)
+
     def set_action(self, action: Optional[T]):
-        handler = self.action_handlers[self._current_event].get(self._current_action)
+        handler = self._get_last_handler()
         if handler is not None:
             handler.reset()
 
@@ -72,10 +75,22 @@ class Action[T: Enum]:
         return
 
     def press(self) -> None:
+        if (
+            self._current_event != "press"
+            and (handler := self._get_last_handler()) is not None
+        ):
+            handler.reset()
+
         self._current_event = "press"
         return
 
     def release(self) -> None:
+        if (
+            self._current_event != "release"
+            and (handler := self._get_last_handler()) is not None
+        ):
+            handler.reset()
+
         self._current_event = "release"
         return
 
