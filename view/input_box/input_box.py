@@ -8,6 +8,7 @@ import pygame.mouse
 import pygame.scrap
 from pygame.constants import (
     K_a,
+    K_c,
     K_v,
     K_z,
     K_BACKSPACE,
@@ -206,6 +207,10 @@ class InputBoxView(View, Valued[str]):
                     self._caret_pos.end = len(self._value)
                     return True
                 return False
+
+            if key == K_c:
+                pygame.scrap.put_text(self._value)
+                return True
 
             if key == K_v:
                 self._input_text(pygame.scrap.get_text())
