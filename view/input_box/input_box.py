@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from enum import Enum, auto
-from typing import Callable, Optional
+from typing import Callable, Optional, Literal
 
 import pygame.mouse
 import pygame.scrap
@@ -82,6 +82,8 @@ def _make_action(handler: Callable[[], None]) -> Action:
 class InputBoxView(View, Valued[str]):
     def __init__(self) -> None:
         super().__init__()
+
+        self._value = ""
 
         self._pattern: str = ""
 
@@ -170,6 +172,15 @@ class InputBoxView(View, Valued[str]):
                     self._remove_selected_text()
                     return True
 
+                if self._ctrl_pressed:
+                    last_caret_pos = self._caret_pos.end
+
+                    self._move_caret_by_word("left")
+                    self._caret_pos.start = last_caret_pos
+
+                    self._remove_selected_text()
+                    return True
+
                 self._removal_action.press()
                 return True
 
@@ -186,13 +197,19 @@ class InputBoxView(View, Valued[str]):
                 return True
 
             if key == K_a:
-                self._caret_pos.start = 0
-                self._caret_pos.end = len(self._text_view.value)
-                return True
+                if self._ctrl_pressed:
+                    self._caret_pos.start = 0
+                    self._caret_pos.end = len(self._value)
+                    return True
+                return False
 
             if key == K_RIGHT:
                 if self._shift_pressed:
                     self._dragging = True
+
+                if self._ctrl_pressed:
+                    self._move_caret_by_word("right")
+                    return True
 
                 elif not self._dragging and self._caret_pos.has_selection():
                     self._set_caret_pos(self._caret_pos.end)
@@ -204,6 +221,10 @@ class InputBoxView(View, Valued[str]):
             if key == K_LEFT:
                 if self._shift_pressed:
                     self._dragging = True
+
+                if self._ctrl_pressed:
+                    self._move_caret_by_word("left")
+                    return True
 
                 elif not self._dragging and self._caret_pos.has_selection():
                     self._set_caret_pos(self._caret_pos.start)
@@ -244,15 +265,6 @@ class InputBoxView(View, Valued[str]):
         return
 
     @property
-    def value(self) -> str:
-        return self._text_view.value
-
-    @value.setter
-    def value(self, value: str) -> None:
-        self._text_view.value = value
-        return
-
-    @property
     def text_view(self) -> TextView:
         return self._text_view
 
@@ -266,6 +278,7 @@ class InputBoxView(View, Valued[str]):
         return
 
     def update(self, delta: int) -> None:
+        self._text_view.value = self._value
         self._text_view.style.size = self.style.size
         self._text_layout = self.text_view.layout()
 
@@ -284,7 +297,7 @@ class InputBoxView(View, Valued[str]):
     def _set_caret_pos(self, pos: int) -> None:
         self._caret_view.state = CaretState.WORKING
 
-        if pos > (text_length := len(self._text_view.value)):
+        if pos > (text_length := len(self._value)):
             pos = text_length
         elif pos < 0:
             pos = 0
@@ -293,6 +306,35 @@ class InputBoxView(View, Valued[str]):
             self._caret_pos.start = pos
 
         self._caret_pos.end = pos
+        return
+
+    def _move_caret_by_word(self, direction: Literal["right", "left"]) -> None:
+        start: int
+        step: int
+        match direction:
+            case "right":
+                start = self._caret_pos.end
+                step = 1
+            case "left":
+                start = self._caret_pos.end - 1
+                step = -1
+
+        caret_pos = self._caret_pos.end
+        entered_word = False
+        for index, value in enumerate(self._value[start::step], 1):
+            caret_pos = self._caret_pos.end + index * step
+
+            if not entered_word:
+                if value == " ":
+                    continue
+                else:
+                    entered_word = True
+
+            if value == " ":
+                caret_pos -= step
+                break
+
+        self._set_caret_pos(caret_pos)
         return
 
     def _remove_selected_text(self) -> None:
@@ -305,9 +347,7 @@ class InputBoxView(View, Valued[str]):
             start = self._caret_pos.end
             end = self._caret_pos.start
 
-        self._text_view.value = (
-            self._text_view.value[:start] + self._text_view.value[end:]
-        )
+        self._value = self._value[:start] + self._value[end:]
         self._set_caret_pos(start)
         return
 
@@ -315,10 +355,10 @@ class InputBoxView(View, Valued[str]):
         if self._caret_pos.end == 0:
             return
 
-        if self._text_view.value:
-            self._text_view.value = (
-                self._text_view.value[: self._caret_pos.end - 1]
-                + self._text_view.value[self._caret_pos.end :]
+        if self._value:
+            self._value = (
+                self._value[: self._caret_pos.end - 1]
+                + self._value[self._caret_pos.end :]
             )
         self._set_caret_pos(self._caret_pos.end - 1)
         return
@@ -329,19 +369,19 @@ class InputBoxView(View, Valued[str]):
 
         for character in text:
             candidate_text = (
-                self._text_view.value[: self._caret_pos.end]
+                self._value[: self._caret_pos.end]
                 + character
-                + self._text_view.value[self._caret_pos.end :]
+                + self._value[self._caret_pos.end :]
             )
 
             if self._pattern == "":
-                self._text_view.value = candidate_text
+                self._value = candidate_text
                 self._set_caret_pos(self._caret_pos.end + 1)
                 return
 
             # check pattern
             if re.fullmatch(self._pattern, candidate_text) is None:
                 continue
-            self._text_view.value = candidate_text
+            self._value = candidate_text
             self._set_caret_pos(self._caret_pos.end + 1)
         return
