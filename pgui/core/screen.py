@@ -1,0 +1,95 @@
+from __future__ import annotations
+
+from typing import override
+from copy import deepcopy
+from dataclasses import dataclass
+
+import pygame.transform
+from pygame.surface import Surface
+from pygame.math import Vector2
+
+from pgui.core.node import RootNode
+from pgui.core.canvas_item import CanvasItem
+from pgui.event.dispatcher import EventDispatcher
+from pgui.event.handler import MouseHandler
+from pgui.model import MouseButton
+from pgui.model import InputEvent, MouseDownEvent, MouseUpEvent, MouseMotionEvent
+
+
+@dataclass(frozen=True)
+class Viewport:
+    size: tuple[int, int]
+    scale: float = 1.0
+
+
+class Screen(CanvasItem, RootNode):
+    def __init__(self, viewport: Viewport, position: tuple[int, int] = (0, 0)) -> None:
+        super().__init__()
+
+        self.viewport: Viewport = viewport
+
+        self._transform.x = position[0]
+        self._transform.y = position[1]
+
+        self.__dispatcher: EventDispatcher = EventDispatcher()
+        handler = MouseHandler()
+
+        @handler.on_mouse_down
+        def on_mouse_down(
+            _view: CanvasItem, _button: MouseButton, _pos: Vector2
+        ) -> bool:
+            return True
+
+        self.__dispatcher.add_handler(handler)
+        return
+
+    @override
+    def hit_test(self, x: int | float, y: int | float) -> bool:
+        return True
+
+    def dispatch(self, event: InputEvent) -> None:
+        """dispatch a single pygame event to all nodes"""
+        self.__dispatcher.dispatch(self, event)
+
+        for child in self._children:
+            if not isinstance(child, CanvasItem):
+                continue
+
+            child_event = deepcopy(event)
+            if isinstance(
+                child_event, (MouseDownEvent, MouseUpEvent, MouseMotionEvent)
+            ):
+                child_event.pos.x -= child.transform.x
+                child_event.pos.y -= child.transform.y
+
+            if child.dispatch(child_event):
+                return
+
+    def update(self, delta_ms: int) -> None:
+        """update all nodes"""
+
+        worklist = self._children.copy()
+        while worklist:
+            current = worklist.pop()
+
+            children = current.get_children()
+            if children:
+                worklist.extend(children)
+
+            if isinstance(current, CanvasItem):
+                current.update(delta_ms)
+
+    def render(self, surface: Surface) -> None:
+        """render screen"""
+        screen_surface = Surface(self.viewport.size)
+        screen_surface.fill(self._style.background_color)
+
+        for child in self._children:
+            if not isinstance(child, CanvasItem):
+                continue
+
+            child.render(screen_surface)
+
+        surface.blit(
+            pygame.transform.scale_by(screen_surface, self.viewport.scale), (0, 0)
+        )
